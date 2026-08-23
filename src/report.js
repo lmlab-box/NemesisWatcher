@@ -1,4 +1,4 @@
-import { WORLD, THRESHOLDS } from './config.js';
+import { WORLD, THRESHOLDS, MODEL } from './config.js';
 import { shortLabel, addDays } from './lib/dates.js';
 import { escapeHtml } from './lib/names.js';
 
@@ -15,6 +15,8 @@ const SOURCE_SHORT = {
   tibiabossespl: 'TB.pl',
   tibiaboss: 'TBoss',
 };
+
+const AGREEMENT_MARK = { alto: '🟢', medio: '🟠', bajo: '🔴' };
 
 function flags(row) {
   const marks = [];
@@ -39,12 +41,10 @@ function modelLine(row) {
   if (own.daysSince !== null) bits.push(`${own.daysSince}d sin verse`);
   if (own.minGap !== undefined) bits.push(`min ${own.minGap}d`);
   if (own.medianGap) bits.push(`med ${Math.round(own.medianGap)}d`);
-  if (own.appearances) bits.push(`n=${own.appearances}`);
+  if (own.sightings) bits.push(`n=${own.sightings}`);
   if (own.status === 'overdue') bits.push('atrasado');
   return bits.length ? `   ${bits.join(' · ')}` : null;
 }
-
-const AGREEMENT_MARK = { alto: '🟢', medio: '🟠', bajo: '🔴' };
 
 function candidateBlock(row, index) {
   const mark = row.agreement.level in AGREEMENT_MARK ? ` ${AGREEMENT_MARK[row.agreement.level]}` : '';
@@ -81,24 +81,43 @@ export function buildReport({ day, buckets, history, externals, bossList }) {
   const windowStart = addDays(day, -1);
   const messages = [];
 
-  // ---- 1. What died during the window that just closed -----------------------------
+  // ---- 1. What happened during the window that just closed ---------------------------
+  const header = [
+    `🐉 <b>${WORLD} · Nemesis</b>`,
+    `🗓 Killstats del ${shortLabel(day)} (ventana ≈ ${shortLabel(windowStart)} 03:00 → ${shortLabel(day)} 03:00 CE(S)T)`,
+  ].join('\n');
+
   const killedBlocks = buckets.killed.map(
     (row) => `• ${link(row)} ×${row.killedToday}${row.hard ? ' 💪' : ''}`,
   );
   messages.push(
     ...pack(
-      [
-        `🐉 <b>${WORLD} · Nemesis</b>`,
-        `🗓 Killstats del ${shortLabel(day)} (ventana ≈ ${shortLabel(windowStart)} 03:00 → ${shortLabel(day)} 03:00 CE(S)T)`,
-        '',
-        '☠️ <b>Murieron en esta ventana</b> — su contador se reinició, no los busques hoy',
-      ].join('\n'),
+      `${header}\n\n☠️ <b>Murieron en esta ventana</b> — su contador se reinició, no los busques hoy`,
       killedBlocks,
       { empty: '<i>Ningún nemesis registrado en esta ventana.</i>' },
     ),
   );
 
-  // ---- 2. Most likely to spawn today ------------------------------------------------
+  // ---- 2. Seen alive and not killed — the most actionable thing in the report ---------
+  const survivedBlocks = buckets.survived.map(
+    (row) => `• ${link(row)} — mató a <b>${row.playersKilledToday}</b> jugador(es) y nadie lo mató`,
+  );
+  if (survivedBlocks.length > 0) {
+    messages.push(
+      ...pack('🩸 <b>Apareció y NO lo mataron</b> — puede seguir arriba ahora mismo', survivedBlocks),
+    );
+  }
+
+  const stillUpBlocks = buckets.stillUp.map(
+    (row) => `• ${link(row)} — visto vivo hace <b>${row.own.daysSince}d</b> (${shortLabel(row.own.lastSeen)}), sin muerte registrada desde entonces`,
+  );
+  if (stillUpBlocks.length > 0) {
+    messages.push(
+      ...pack(`👀 <b>Vistos vivos y nunca cazados</b> (últimos ${THRESHOLDS.stillUpMaxDays} días)`, stillUpBlocks),
+    );
+  }
+
+  // ---- 3. Most likely to spawn today -------------------------------------------------
   const high = buckets.high.slice(0, THRESHOLDS.maxPerBucket);
   messages.push(
     ...pack(
@@ -108,7 +127,7 @@ export function buildReport({ day, buckets, history, externals, bossList }) {
     ),
   );
 
-  // ---- 3. Possible, plus what enters its window shortly ------------------------------
+  // ---- 4. Possible, plus what enters its window shortly -------------------------------
   const possible = buckets.possible.slice(0, THRESHOLDS.maxPerBucket);
   messages.push(
     ...pack(
@@ -125,7 +144,7 @@ export function buildReport({ day, buckets, history, externals, bossList }) {
     messages.push(...pack(`🕒 <b>Entran en ventana en ≤ ${THRESHOLDS.soonDays} días</b>`, soonBlocks));
   }
 
-  // ---- 4. Always-available bosses, listed but never predicted ------------------------
+  // ---- 5. Always-available bosses, listed but never predicted ------------------------
   if (buckets.frequent.length > 0) {
     const names = buckets.frequent.map((row) => link(row)).join(' · ');
     messages.push(
@@ -133,7 +152,16 @@ export function buildReport({ day, buckets, history, externals, bossList }) {
     );
   }
 
-  // ---- 5. Provenance ----------------------------------------------------------------
+  if (buckets.dormant.length > 0) {
+    const names = buckets.dormant
+      .map((row) => `${link(row)} <i>(${row.own.daysSince}d)</i>`)
+      .join(' · ');
+    messages.push(
+      `🥶 <b>Sin rastro desde hace mucho</b> (más de ${MODEL.dormantFactor}× su intervalo más largo observado — probablemente nadie los está haciendo)\n${names}`,
+    );
+  }
+
+  // ---- 6. Provenance ------------------------------------------------------------------
   const sourceStatus = externals
     .map((s) => (s.ok ? `✅ ${s.label}` : `❌ ${s.label} (${escapeHtml(s.error ?? 'error')})`))
     .join(' · ');
@@ -150,5 +178,7 @@ export function buildReport({ day, buckets, history, externals, bossList }) {
     ].join('\n'),
   );
 
-  return messages.filter((m) => m.trim().length > 0).map((m) => (m.length > TELEGRAM_LIMIT ? `${m.slice(0, TELEGRAM_LIMIT - 20)}\n…` : m));
+  return messages
+    .filter((m) => m.trim().length > 0)
+    .map((m) => (m.length > TELEGRAM_LIMIT ? `${m.slice(0, TELEGRAM_LIMIT - 20)}\n…` : m));
 }

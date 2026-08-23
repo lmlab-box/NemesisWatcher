@@ -24,12 +24,13 @@ function agreementOf(values) {
  * statistics history and every step of it can be inspected; the other sites are black
  * boxes, calibrated differently from each other, and are most useful as a cross-check.
  */
-export function buildConsensus({ bossList, history, externals, today, killsToday }) {
+export function buildConsensus({ bossList, history, externals, today, activityToday }) {
   const rows = bossList.bosses.map((boss) => {
     const entry = history.bosses[boss.name];
     const own = analyzeBoss(entry?.appearances ?? [], today, {
       coverageFrom: history.coverage.from,
       coverageDays: history.coverage.days,
+      killedOn: entry?.killedOn ?? [],
     });
 
     const key = normalizeName(boss.name);
@@ -72,7 +73,7 @@ export function buildConsensus({ bossList, history, externals, today, killsToday
       else if (typeof value.canSpawn === 'boolean') castVote(value.canSpawn);
     }
 
-    const killedToday = killsToday.get(boss.name) ?? 0;
+    const today_ = activityToday.get(boss.name) ?? { killed: 0, playersKilled: 0 };
 
     return {
       name: boss.name,
@@ -86,10 +87,13 @@ export function buildConsensus({ bossList, history, externals, today, killsToday
       agreement: agreementOf(numeric),
       sources: numeric.length,
       votes,
-      killedToday,
+      killedToday: today_.killed,
+      playersKilledToday: today_.playersKilled,
       // A boss killed during the day being reported has just reset its own timer,
       // so today's chance is meaningless for it.
-      justKilled: killedToday > 0,
+      justKilled: today_.killed > 0,
+      // It showed up and walked away — the most actionable line in the whole report.
+      survivedToday: today_.killed === 0 && today_.playersKilled > 0,
     };
   });
 
@@ -102,14 +106,38 @@ export function bucketRows(rows) {
     .filter((r) => r.justKilled)
     .sort((a, b) => b.killedToday - a.killedToday || a.name.localeCompare(b.name));
 
+  const survived = rows
+    .filter((r) => r.survivedToday)
+    .sort((a, b) => b.playersKilledToday - a.playersKilledToday || a.name.localeCompare(b.name));
+
+  /**
+   * Last seen alive on an earlier day and never killed since. It either despawned or is
+   * still standing there — worth a look before trusting any probability.
+   */
+  const stillUp = rows
+    .filter((r) => !r.justKilled && !r.survivedToday && !r.own.frequent)
+    .filter((r) => r.own.stillUp && r.own.daysSince > 0 && r.own.daysSince <= THRESHOLDS.stillUpMaxDays)
+    .sort((a, b) => a.own.daysSince - b.own.daysSince || a.name.localeCompare(b.name));
+
+  const stillUpNames = new Set(stillUp.map((r) => r.name));
+
   // Quest-gated and instanced bosses are available nearly every day; predicting them is
   // meaningless and they would crowd out the rare spawns the report exists for.
   const frequent = rows
-    .filter((r) => !r.justKilled && r.own.frequent)
+    .filter((r) => !r.justKilled && !r.survivedToday && r.own.frequent)
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const candidates = rows.filter((r) => !r.justKilled && !r.own.frequent);
+  // Far past anything ever observed for them: not "due", just nobody is doing them.
+  const dormant = rows
+    .filter((r) => !r.justKilled && !r.survivedToday && !r.own.frequent && !stillUpNames.has(r.name))
+    .filter((r) => r.own.dormant)
+    .sort((a, b) => b.own.daysSince - a.own.daysSince);
+  const dormantNames = new Set(dormant.map((r) => r.name));
 
+  const candidates = rows.filter(
+    (r) => !r.justKilled && !r.survivedToday && !r.own.frequent
+      && !stillUpNames.has(r.name) && !dormantNames.has(r.name),
+  );
   const high = candidates.filter((r) => (r.consensus ?? 0) >= THRESHOLDS.high);
   const possible = candidates.filter(
     (r) => (r.consensus ?? 0) >= THRESHOLDS.possible && (r.consensus ?? 0) < THRESHOLDS.high,
@@ -119,5 +147,5 @@ export function bucketRows(rows) {
     .filter((r) => r.own.status === 'cooldown' && r.own.daysToWindow > 0 && r.own.daysToWindow <= THRESHOLDS.soonDays)
     .sort((a, b) => a.own.daysToWindow - b.own.daysToWindow || a.name.localeCompare(b.name));
 
-  return { killed, frequent, high, possible, soon };
+  return { killed, survived, stillUp, frequent, dormant, high, possible, soon };
 }

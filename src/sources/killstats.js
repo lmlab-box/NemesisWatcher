@@ -11,20 +11,32 @@ const ENTRY_RE =
   /"race"\s*:\s*"((?:[^"\\]|\\.)*)"\s*,\s*"last_day_players_killed"\s*:\s*(\d+)\s*,\s*"last_day_killed"\s*:\s*(\d+)/g;
 
 /**
- * A boss only appears in the Kill Statistics list when it was killed at least once in
- * the last seven days — entries with all four counters at zero are dropped by tibia.com
- * (verified: zero such entries in a live response). So `last_day_killed > 0` means the
- * boss was killed during the killstats day that just closed.
+ * Reads one day of kill statistics.
  *
- * @returns {Map<string, number>} raw killstats race name -> kills during that day
+ * Two counters matter, and both are evidence that the boss was in the world that day:
+ *
+ *   last_day_killed         players killed the boss
+ *   last_day_players_killed the boss killed players
+ *
+ * The second one is what makes this worth doing. On 2026-08-13 Havera's kill statistics
+ * showed Gaz'haragoth with 6 players killed and 0 deaths — it spawned, wiped a team and
+ * walked away. Counting only deaths loses exactly the appearances of the bosses that are
+ * hardest to kill, which are the ones worth hunting.
+ *
+ * Presence in the list is *not* evidence for the day: a race stays listed for a week on
+ * its last_week counters, with both last_day counters at zero.
+ *
+ * @returns {Map<string, {killed: number, playersKilled: number}>} keyed by raw race name
  */
-export function extractDailyKills(rawJson) {
-  const kills = new Map();
+export function extractDailyActivity(rawJson) {
+  const activity = new Map();
   ENTRY_RE.lastIndex = 0;
   let match;
   while ((match = ENTRY_RE.exec(rawJson)) !== null) {
+    const playersKilled = Number(match[2]);
     const killed = Number(match[3]);
-    if (killed === 0) continue;
+    if (killed === 0 && playersKilled === 0) continue;
+
     let name = match[1];
     if (name.includes('\\')) {
       // Only reached if tibia.com ever ships a name with a JSON escape in it.
@@ -34,9 +46,9 @@ export function extractDailyKills(rawJson) {
         /* keep the raw form rather than dropping the entry */
       }
     }
-    kills.set(name, killed);
+    activity.set(name, { killed, playersKilled });
   }
-  return kills;
+  return activity;
 }
 
 /** Live snapshot of the killstats day that just closed. */

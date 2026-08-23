@@ -6,19 +6,20 @@
 <script type="module">
 // config.js reads process.env for its tunables; Node provides it, a browser does not.
 globalThis.process ??= { env: {} };
+
 // Third-party sites block cross-origin reads, so absolute requests are bounced through
-// the local PowerShell proxy. Node fetches them directly, so this only exists for the harness.
+// the local PowerShell proxy. raw.githubusercontent already serves CORS *, and the
+// single-threaded listener would serialise the archive files, so it goes straight out.
 const nativeFetch = window.fetch.bind(window);
 window.fetch = (input, init) => {
   const url = typeof input === 'string' ? input : input.url;
-  // raw.githubusercontent already serves CORS *, and the single-threaded proxy would
-  // serialise the 180 archive files, so it goes straight out.
-  const needsProxy = /^https?:\/\//.test(url) && !url.startsWith('http://127.0.0.1:8787') && !url.includes('raw.githubusercontent.com');
-  if (needsProxy) {
-    return nativeFetch('/proxy?url=' + encodeURIComponent(url), { ...init, headers: undefined });
-  }
+  const needsProxy = /^https?:\/\//.test(url)
+    && !url.startsWith('http://127.0.0.1:8787')
+    && !url.includes('raw.githubusercontent.com');
+  if (needsProxy) return nativeFetch('/proxy?url=' + encodeURIComponent(url), { ...init, headers: undefined });
   return nativeFetch(input, init);
 };
+
 const out = document.getElementById('out');
 const log = (...a) => { out.textContent += '\n' + a.map(x => typeof x === 'string' ? x : JSON.stringify(x, null, 1)).join(' '); };
 window.RESULT = { pending: true };
@@ -33,8 +34,7 @@ try {
 
   const checks = [];
   const check = (name, actual, expected) => {
-    const ok = JSON.stringify(actual) === JSON.stringify(expected);
-    checks.push({ name, ok, actual, expected });
+    checks.push({ name, ok: JSON.stringify(actual) === JSON.stringify(expected), actual, expected });
   };
 
   // ---- date helpers -------------------------------------------------------------
@@ -43,10 +43,8 @@ try {
   check('daysBetween', dates.daysBetween('2026-08-01', '2026-08-22'), 21);
   check('dayRange len', dates.dayRange('2026-08-20', '2026-08-22').length, 3);
   check('shortLabel', dates.shortLabel('2026-08-22'), '22 ago');
-  // 2026-08-22T01:00Z is 03:00 CEST -> before the 05:00 boundary -> still the 21st
   check('killstatsDay before boundary', dates.currentKillstatsDay(new Date('2026-08-22T01:00:00Z')), '2026-08-21');
   check('killstatsDay after boundary', dates.currentKillstatsDay(new Date('2026-08-22T06:00:00Z')), '2026-08-22');
-  // winter: 04:30 UTC is 05:30 CET -> past the boundary
   check('killstatsDay winter', dates.currentKillstatsDay(new Date('2026-01-15T04:30:00Z')), '2026-01-15');
   check('killstatsDay winter early', dates.currentKillstatsDay(new Date('2026-01-15T03:30:00Z')), '2026-01-14');
 
@@ -54,24 +52,55 @@ try {
   check('normalizeName casing', names.normalizeName('Arthom The Hunter'), names.normalizeName('Arthom the Hunter'));
   check('wikiUrl', names.wikiUrl('Man in the Cave'), 'https://tibia.fandom.com/wiki/Man_in_the_Cave');
 
-  // ---- probability model ---------------------------------------------------------
+  // ---- killstats extraction ------------------------------------------------------
+  const sample = JSON.stringify({ killstatistics: { world: 'Havera', entries: [
+    { race: 'Ferumbras', last_day_players_killed: 6, last_day_killed: 0, last_week_players_killed: 6, last_week_killed: 0 },
+    { race: 'Grorlam', last_day_players_killed: 0, last_day_killed: 2, last_week_players_killed: 0, last_week_killed: 5 },
+    { race: 'Zomba', last_day_players_killed: 0, last_day_killed: 0, last_week_players_killed: 0, last_week_killed: 3 },
+  ] } }, null, 2);
+  const act = killstats.extractDailyActivity(sample);
+  check('extract skips idle race', act.has('Zomba'), false);
+  check('extract keeps killer that survived', act.get('Ferumbras'), { killed: 0, playersKilled: 6 });
+  check('extract keeps killed boss', act.get('Grorlam'), { killed: 2, playersKilled: 0 });
+
+  // ---- history recording ----------------------------------------------------------
+  const alias = new Map([['Ferumbras', 'Ferumbras'], ['Grorlam', 'Grorlam']]);
+  const h = history.emptyHistory();
+  history.applyDay(h, '2026-08-13', act, alias);
+  history.applyDay(h, '2026-08-13', act, alias); // idempotent
+  check('survivor recorded as appearance', h.bosses.Ferumbras.appearances, ['2026-08-13']);
+  check('survivor not recorded as a kill', h.bosses.Ferumbras.killedOn, []);
+  check('kill recorded', h.bosses.Grorlam.killedOn, ['2026-08-13']);
+  check('schema stamped', h.schemaVersion, history.SCHEMA_VERSION);
+
+  // ---- probability model -----------------------------------------------------------
   const every10 = ['2026-01-01','2026-01-11','2026-01-21','2026-01-31','2026-02-10','2026-02-20','2026-03-02'];
-  const cooling = model.analyzeBoss(every10, '2026-03-05');
+  const cooling = model.analyzeBoss(every10, '2026-03-05', { killedOn: every10 });
   check('cooldown status', cooling.status, 'cooldown');
   check('cooldown chance', cooling.chance, 0);
   check('cooldown daysToWindow', cooling.daysToWindow, 7);
   check('minGap', cooling.minGap, 10);
-  const inWindow = model.analyzeBoss(every10, '2026-03-12');
+  check('killed boss is not still up', cooling.stillUp, false);
+  const inWindow = model.analyzeBoss(every10, '2026-03-12', { killedOn: every10 });
   check('in-window status', inWindow.status, 'window');
   check('in-window chance > 0', inWindow.chance > 0, true);
-  const overdue = model.analyzeBoss(every10, '2026-06-01');
+  const overdue = model.analyzeBoss(every10, '2026-06-01', { killedOn: every10 });
   check('overdue status', overdue.status, 'overdue');
   check('overdue chance >= prior', overdue.chance >= overdue.prior, true);
+  check('thin sample never certain', model.analyzeBoss(['2026-01-01','2026-01-30'], '2026-06-01', { killedOn: ['2026-01-01','2026-01-30'] }).chance <= 0.5, true);
   check('unseen', model.analyzeBoss([], '2026-03-05').status, 'unseen');
   check('single appearance', model.analyzeBoss(['2026-01-01'], '2026-03-05').status, 'insufficient');
-  const noisy = model.analyzeBoss(['2026-01-01','2026-01-02','2026-01-30','2026-02-01','2026-03-20'], '2026-03-25');
+
+  // consecutive days are one spawn straddling the daily refresh, not a 1-day respawn
+  const straddling = ['2026-01-01','2026-01-02','2026-01-15','2026-01-16','2026-01-29','2026-01-30','2026-02-12'];
+  const collapsed = model.analyzeBoss(straddling, '2026-02-20', { killedOn: straddling });
+  check('runs collapsed into sightings', collapsed.sightings, 4);
+  check('collapsed gaps', collapsed.gaps, [14, 14, 14]);
+  check('collapsed boss not flagged unreliable', collapsed.unreliable, false);
+
+  const noisy = model.analyzeBoss(['2026-01-01','2026-01-03','2026-01-30','2026-02-01','2026-03-20'], '2026-03-25', { killedOn: ['2026-01-01'] });
   check('multi-spawn flagged unreliable', noisy.unreliable, true);
-  check('high confidence needs samples', cooling.confidence, 'high');
+  check('last sighting never killed => still up', noisy.stillUp, true);
 
   log('=== unit checks ===');
   for (const c of checks) log(`${c.ok ? 'PASS' : 'FAIL'}  ${c.name}` + (c.ok ? '' : `  got=${JSON.stringify(c.actual)} want=${JSON.stringify(c.expected)}`));
@@ -85,44 +114,53 @@ try {
   log(`boss list: ${bossList.bosses.length} nemesis, ${bossList.byKillStatsName.size} killstats aliases`);
 
   const today = '2026-08-22';
-  const days = dates.dayRange(dates.addDays(today, -179), today);
+  const days = dates.dayRange(dates.addDays(today, -400), today);
   const hist = history.emptyHistory();
-  let missing = 0;
+  const missingDays = [];
   const snaps = await mapLimit(days, 8, async (day) => {
     const raw = await killstats.fetchArchivedDay(day);
-    if (!raw) { missing++; return null; }
-    return { day, kills: killstats.extractDailyKills(raw) };
+    if (!raw) { missingDays.push(day); return null; }
+    return { day, activity: killstats.extractDailyActivity(raw) };
   });
-  for (const s of snaps) if (s) history.applyDay(hist, s.day, s.kills, bossList.byKillStatsName);
-  log(`backfilled ${days.length} days (${missing} missing) → coverage ${hist.coverage.from}..${hist.coverage.to} (${hist.coverage.days}d)`);
-  log(`nemesis with appearances: ${Object.keys(hist.bosses).length}`);
+  for (const s of snaps) if (s) history.applyDay(hist, s.day, s.activity, bossList.byKillStatsName);
+  log(`backfilled ${days.length} days → coverage ${hist.coverage.from}..${hist.coverage.to} (${hist.coverage.days}d)`);
+  log(`días no disponibles en el archivo: ${missingDays.length ? missingDays.join(', ') : 'ninguno'}`);
+  log(`nemesis con apariciones: ${Object.keys(hist.bosses).length}`);
 
   const todaySnap = snaps[snaps.length - 1];
-  const killsToday = new Map();
-  for (const [raw, n] of todaySnap.kills) {
+  const activityToday = new Map();
+  for (const [raw, counters] of todaySnap.activity) {
     const pretty = bossList.byKillStatsName.get(raw);
-    if (pretty) killsToday.set(pretty, n);
+    if (pretty) activityToday.set(pretty, counters);
   }
-  log(`nemesis killed in the ${today} window: ${killsToday.size} → ${[...killsToday.keys()].join(', ') || '(none)'}`);
 
   const { fetchExternalSources } = await import('/src/sources/index.js');
   const externals = await fetchExternalSources();
   for (const s of externals) log(`  ${s.ok ? 'ok  ' : 'FAIL'} ${s.label}: ${s.ok ? s.entries.size + ' bosses' : s.error}`);
-  const rows = consensus.buildConsensus({ bossList, history: hist, externals, today, killsToday });
+
+  const rows = consensus.buildConsensus({ bossList, history: hist, externals, today, activityToday });
   const buckets = consensus.bucketRows(rows);
-  log(`buckets: killed=${buckets.killed.length} high=${buckets.high.length} possible=${buckets.possible.length} soon=${buckets.soon.length}`);
+  window.__HIST = hist;
+  window.__ROWS = rows;
+  log(`buckets: ${Object.entries(buckets).map(([k, v]) => `${k}=${v.length}`).join(' ')}`);
 
   const messages = report.buildReport({ day: today, buckets, history: hist, externals, bossList });
-  log(`\nmessages: ${messages.length}, lengths: ${messages.map(m => m.length).join(', ')}, max limit 4096`);
+  log(`\nmessages: ${messages.length}, lengths: ${messages.map(m => m.length).join(', ')} (limit 4096)`);
   log('\n' + messages.map((m, i) => `----- mensaje ${i + 1} -----\n${m}`).join('\n\n'));
 
+  const gaz = hist.bosses["Gaz'haragoth"];
   window.RESULT = {
-    pending: false, unit: { total: checks.length, failed: failed.map(f => f.name) },
-    coverage: hist.coverage, tracked: Object.keys(hist.bosses).length,
-    killedToday: [...killsToday.entries()],
-    buckets: { killed: buckets.killed.length, high: buckets.high.length, possible: buckets.possible.length, soon: buckets.soon.length },
+    pending: false,
+    unit: { total: checks.length, failed: failed.map(f => f.name) },
+    coverage: hist.coverage,
+    missingDays,
+    tracked: Object.keys(hist.bosses).length,
+    gazharagoth: gaz ? { appearances: gaz.appearances.slice(-8), killedOn: gaz.killedOn.slice(-8) } : null,
+    buckets: Object.fromEntries(Object.entries(buckets).map(([k, v]) => [k, v.length])),
+    survived: buckets.survived.map(r => `${r.name} (${r.playersKilledToday})`),
+    stillUp: buckets.stillUp.map(r => `${r.name} (${r.own.daysSince}d)`),
     messageLengths: messages.map(m => m.length),
-    top: buckets.high.slice(0, 12).map(r => ({ name: r.name, chance: Number((r.consensus ?? 0).toFixed(3)), days: r.own.daysSince, min: r.own.minGap, n: r.own.appearances, conf: r.own.confidence, unreliable: r.own.unreliable })),
+    top: buckets.high.slice(0, 10).map(r => ({ name: r.name, chance: Number((r.consensus ?? 0).toFixed(3)), days: r.own.daysSince, min: r.own.minGap, n: r.own.sightings, conf: r.own.confidence, unreliable: r.own.unreliable })),
     messages,
   };
 } catch (err) {

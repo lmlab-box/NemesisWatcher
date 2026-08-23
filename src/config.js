@@ -49,6 +49,9 @@ export const THRESHOLDS = {
   high: 0.15,      // "alta probabilidad"
   possible: 0.04,  // "posible"
   soonDays: 3,     // "entra en ventana en <= N dias"
+  // A boss last seen alive and never killed since may still be standing. Past this many
+  // days it has almost certainly despawned, so it goes back into the normal prediction.
+  stillUpMaxDays: 14,
   maxPerBucket: 25,
 };
 
@@ -71,6 +74,10 @@ export const MODEL = {
   // Killed on this share of the covered days (with a 1-day minimum gap) means the boss
   // is quest-gated or instanced rather than on a spawn timer.
   frequentRate: 0.2,
+  // Far beyond anything ever observed for this boss, the model's assumptions no longer
+  // hold: it is not "due", nobody is doing it. Reported separately instead of ranked.
+  dormantMinDays: 60,
+  dormantFactor: 3,
   // Coefficient of variation above which the interval distribution is too noisy to trust.
   maxCoefficientOfVariation: 0.9,
 };

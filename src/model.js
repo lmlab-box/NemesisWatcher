@@ -12,6 +12,28 @@ function quantile(sorted, q) {
 }
 
 /**
+ * Groups runs of consecutive days into one sighting each.
+ *
+ * Kill statistics have no clock: a boss that spawns shortly before the daily refresh and
+ * is killed shortly after registers on two consecutive days, and one spawn would look
+ * like a one-day respawn interval. TibiaWiki calls this the update-hour effect. Only
+ * strictly adjacent days are merged, so a boss with several independent spawn points
+ * still shows its genuinely short intervals.
+ */
+function collapseRuns(days) {
+  const runs = [];
+  for (const day of days) {
+    const last = runs[runs.length - 1];
+    if (last && daysBetween(last.end, day) === 1) {
+      last.end = day;
+      continue;
+    }
+    runs.push({ start: day, end: day });
+  }
+  return runs;
+}
+
+/**
  * Expected number of days a boss waits past its own minimum before showing up.
  *
  * Computing this straight from the observations breaks on thin data: a boss seen twice,
@@ -37,7 +59,7 @@ function spreadEstimate(gaps, minGap) {
  * smoothed towards a geometric prior so that a boss with only a handful of observations
  * does not produce a 0% or 100% claim.
  */
-export function analyzeBoss(appearances, today, { coverageFrom = null, coverageDays = 0 } = {}) {
+export function analyzeBoss(appearances, today, { coverageFrom = null, coverageDays = 0, killedOn = [] } = {}) {
   if (!appearances || appearances.length === 0) {
     return {
       status: 'unseen',
@@ -49,23 +71,37 @@ export function analyzeBoss(appearances, today, { coverageFrom = null, coverageD
       confidence: 'none',
       unreliable: true,
       frequent: false,
+      dormant: false,
+      stillUp: false,
       note: 'sin apariciones en el historial disponible',
     };
   }
 
-  const lastSeen = appearances[appearances.length - 1];
+  const runs = collapseRuns(appearances);
+  const lastRun = runs[runs.length - 1];
+  const lastSeen = lastRun.start;
   const daysSince = daysBetween(lastSeen, today);
   const rate = coverageDays > 0 ? appearances.length / coverageDays : 0;
 
+  /**
+   * The boss was last seen alive and nothing killed it on any day of that sighting —
+   * on a world where kill statistics would have recorded the kill, it may still be up.
+   */
+  const kills = new Set(killedOn);
+  const stillUp = !appearances.some((day) => day >= lastRun.start && day <= lastRun.end && kills.has(day));
+  const lastKilled = killedOn.length ? killedOn[killedOn.length - 1] : null;
+
   const gaps = [];
-  for (let i = 1; i < appearances.length; i++) {
-    gaps.push(daysBetween(appearances[i - 1], appearances[i]));
+  for (let i = 1; i < runs.length; i++) {
+    gaps.push(daysBetween(runs[i - 1].start, runs[i].start));
   }
 
   if (gaps.length === 0) {
     return {
       status: 'insufficient',
       lastSeen,
+      lastSeenEnd: lastRun.end,
+      lastKilled,
       daysSince,
       appearances: appearances.length,
       gaps,
@@ -73,6 +109,8 @@ export function analyzeBoss(appearances, today, { coverageFrom = null, coverageD
       confidence: 'none',
       unreliable: true,
       frequent: false,
+      dormant: false,
+      stillUp,
       note: 'una sola aparicion registrada, no hay intervalos',
     };
   }
@@ -105,7 +143,8 @@ export function analyzeBoss(appearances, today, { coverageFrom = null, coverageD
    * somebody almost every day, so "when does it spawn" is the wrong question for them —
    * they are effectively always available and would otherwise flood the report.
    */
-  const frequent = minGap <= 1 && rate >= MODEL.frequentRate;
+  const frequent = rate >= MODEL.frequentRate && minGap <= MODEL.multiSpawnMinGap;
+  const dormant = daysSince > Math.max(MODEL.dormantMinDays, MODEL.dormantFactor * maxGap);
   const unreliable = minGap <= MODEL.multiSpawnMinGap || cv > MODEL.maxCoefficientOfVariation;
   const confidence =
     gaps.length >= MODEL.minGapsForConfidence && !unreliable
@@ -127,12 +166,16 @@ export function analyzeBoss(appearances, today, { coverageFrom = null, coverageD
     notes.push('intervalos muy dispersos, prediccion debil');
   }
   if (gaps.length < 3) notes.push(`solo ${gaps.length} intervalo(s) observado(s)`);
+  if (dormant) notes.push('lleva mucho mas de lo normal sin aparecer: probablemente nadie lo esta haciendo');
 
   return {
     status,
     lastSeen,
+    lastSeenEnd: lastRun.end,
+    lastKilled,
     daysSince,
     appearances: appearances.length,
+    sightings: runs.length,
     rate,
     gaps,
     minGap,
@@ -147,6 +190,8 @@ export function analyzeBoss(appearances, today, { coverageFrom = null, coverageD
     confidence,
     unreliable,
     frequent,
+    dormant,
+    stillUp,
     note: notes.join(' · ') || null,
   };
 }

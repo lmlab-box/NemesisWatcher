@@ -1,8 +1,8 @@
 import { WORLD, BACKFILL_DAYS } from './config.js';
 import { currentKillstatsDay, addDays } from './lib/dates.js';
 import { loadBossList, loadHistory, saveHistory, loadState, saveState } from './store.js';
-import { applyDay } from './history.js';
-import { extractDailyKills, fetchLive, fetchArchivedDay } from './sources/killstats.js';
+import { applyDay, emptyHistory, SCHEMA_VERSION } from './history.js';
+import { extractDailyActivity, fetchLive, fetchArchivedDay } from './sources/killstats.js';
 import { fetchExternalSources } from './sources/index.js';
 import { backfill } from './backfill.js';
 import { buildConsensus, bucketRows } from './consensus.js';
@@ -20,16 +20,16 @@ function log(...args) {
 /**
  * A run must never corrupt the history on a bad response. If the payload does not look
  * like a real kill-statistics page for this world, we stop before touching any state —
- * otherwise every boss silently looks "not killed today" and the whole model drifts.
+ * otherwise every boss silently looks "not seen today" and the whole model drifts.
  */
 function assertUsable(raw, day) {
   if (!raw || raw.length < 10_000) throw new Error(`killstats payload for ${day} is too small (${raw?.length ?? 0} bytes)`);
-  if (!raw.includes(`"world"`) || !raw.toLowerCase().includes(WORLD.toLowerCase())) {
+  if (!raw.includes('"world"') || !raw.toLowerCase().includes(WORLD.toLowerCase())) {
     throw new Error(`killstats payload for ${day} is not for ${WORLD}`);
   }
-  const kills = extractDailyKills(raw);
-  if (kills.size < 50) throw new Error(`killstats payload for ${day} yielded only ${kills.size} killed races — looks broken`);
-  return kills;
+  const activity = extractDailyActivity(raw);
+  if (activity.size < 50) throw new Error(`killstats payload for ${day} yielded only ${activity.size} active races — looks broken`);
+  return activity;
 }
 
 async function main() {
@@ -43,13 +43,19 @@ async function main() {
   }
 
   const bossList = await loadBossList();
-  const history = await loadHistory();
+  let history = await loadHistory();
   log(`tracking ${bossList.bosses.length} nemesis bosses`);
 
-  // First run: build the history from the public archive before reporting anything.
+  // A history recorded under an older rule is rebuilt rather than extended, so a fix to
+  // how appearances are counted reaches every day, not only the ones from here on.
+  if (history.coverage.from && history.schemaVersion !== SCHEMA_VERSION) {
+    log(`history schema ${history.schemaVersion ?? 1} is stale (current ${SCHEMA_VERSION}) — rebuilding`);
+    history = emptyHistory();
+  }
+
   if (!history.coverage.from && process.env.AUTO_BACKFILL !== '0') {
     const from = addDays(day, -BACKFILL_DAYS);
-    log(`empty history — backfilling ${from} → ${day} from the archive`);
+    log(`building history ${from} → ${day} from the archive`);
     const result = await backfill({
       history,
       bossList,
@@ -70,26 +76,31 @@ async function main() {
     raw = await fetchLive();
     source = 'tibiadata';
   }
-  const kills = assertUsable(raw, day);
-  log(`killstats source: ${source} — ${kills.size} races killed in the window`);
+  const activity = assertUsable(raw, day);
+  log(`killstats source: ${source} — ${activity.size} races active in the window`);
 
-  applyDay(history, day, kills, bossList.byKillStatsName);
+  applyDay(history, day, activity, bossList.byKillStatsName);
 
-  const killsToday = new Map();
-  for (const [rawName, count] of kills) {
+  const activityToday = new Map();
+  for (const [rawName, counters] of activity) {
     const name = bossList.byKillStatsName.get(rawName);
-    if (name) killsToday.set(name, count);
+    if (name) activityToday.set(name, counters);
   }
-  log(`nemesis killed in this window: ${killsToday.size}`);
+  const killedCount = [...activityToday.values()].filter((c) => c.killed > 0).length;
+  const survivedCount = [...activityToday.values()].filter((c) => c.killed === 0 && c.playersKilled > 0).length;
+  log(`nemesis active in this window: ${activityToday.size} (${killedCount} killed, ${survivedCount} seen alive and not killed)`);
 
   const externals = await fetchExternalSources();
   for (const feed of externals) {
-    log(`  ${feed.ok ? "ok  " : "FAIL"} ${feed.label}: ${feed.ok ? `${feed.entries.size} bosses` : feed.error}`);
+    log(`  ${feed.ok ? 'ok  ' : 'FAIL'} ${feed.label}: ${feed.ok ? `${feed.entries.size} bosses` : feed.error}`);
   }
 
-  const rows = buildConsensus({ bossList, history, externals, today: day, killsToday });
+  const rows = buildConsensus({ bossList, history, externals, today: day, activityToday });
   const buckets = bucketRows(rows);
-  log(`buckets: killed=${buckets.killed.length} high=${buckets.high.length} possible=${buckets.possible.length} soon=${buckets.soon.length} frequent=${buckets.frequent.length}`);
+  log(
+    `buckets: killed=${buckets.killed.length} survived=${buckets.survived.length} stillUp=${buckets.stillUp.length} ` +
+      `high=${buckets.high.length} possible=${buckets.possible.length} soon=${buckets.soon.length} frequent=${buckets.frequent.length}`,
+  );
 
   const messages = buildReport({ day, buckets, history, externals, bossList });
 

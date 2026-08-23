@@ -3,14 +3,18 @@
 Daily Telegram report of **Nemesis boss spawn chances for the Tibia world Havera**.
 
 Every morning, shortly after tibia.com refreshes its Kill Statistics, the bot sends a
-chain of messages with:
+chain of messages:
 
 1. **Which nemesis died in the window that just closed** — so you do not spend the day
    hunting something someone already killed last night.
-2. **Which ones can realistically spawn today**, ranked by a probability computed from
+2. **Which ones showed up and were not killed** — they wiped a team and walked away, and
+   may still be standing there right now. This is the most actionable line in the report.
+3. **Which ones can realistically spawn today**, ranked by a probability computed from
    Havera's own kill-statistics history and cross-checked against five public trackers.
-3. **Which ones enter their window in the next few days.**
-4. A wiki link on every single boss.
+4. **Which ones enter their window in the next few days**, which ones are available any
+   day, and which ones have gone so long without a trace that nobody is doing them.
+
+Every boss carries a link to its wiki page.
 
 ---
 
@@ -40,15 +44,25 @@ https://raw.githubusercontent.com/tibiamaps/tibia-kill-stats/main/data/havera/20
 ```
 
 Data runs from 2025-12-06 onwards, with a sibling repository covering 2022-08-23 to
-2025-12-04. Both are wired into `ARCHIVES` in `src/config.js`.
+2025-12-04. Both are wired into `ARCHIVES` in `src/config.js`. One day, **2025-12-05**,
+is missing from both — the backfill reports it and carries on.
 
-Two properties of the kill statistics make this work:
+Three properties of the kill statistics make this work:
 
 - **A race with all four counters at zero is dropped from the list.** A boss that is
-  absent was not killed in the last seven days. A boss present with `last_day_killed > 0`
-  was killed during the day that just closed. That gives exact last-seen dates.
-- The archive snapshot is **byte-identical** to what `api.tibiadata.com/v4/killstatistics/Havera`
-  returns for the same day, so the two are interchangeable.
+  absent was not killed and killed nobody in the last seven days.
+- **Two counters count as an appearance, not one.** `last_day_killed` is players killing
+  the boss; `last_day_players_killed` is the boss killing players. Either one proves it
+  was in the world that day. This matters more than it sounds: on 2026-08-13 Havera's
+  statistics showed **Gaz'haragoth with 6 players killed and 0 deaths** — it spawned,
+  wiped a team and was never killed. Counting only deaths made it look like it had not
+  appeared in 308 days, when it had appeared eight times and nobody had managed to kill
+  it since 2025-10-18.
+- Presence in the list is *not* evidence for a given day. A race lingers for a week on
+  its `last_week` counters with both `last_day` counters at zero.
+
+The archive snapshot is **byte-identical** to what `api.tibiadata.com/v4/killstatistics/Havera`
+returns for the same day, so the two are interchangeable.
 
 The same repository also maintains the two lookup tables the bot needs, refreshed on
 every run by `scripts/refresh-lists.mjs`:
@@ -69,6 +83,10 @@ None of these are behind a Cloudflare challenge; all were verified to parse.
 | [TibiaStatistic](https://www.tibia-statistic.com/bosshunter/details/havera) | chance label + %, predicted date | `data-*` attributes on each row |
 | [TibiaBosses.pl](https://tibiabosses.pl/havera) | minimum waiting days, last seen, can-spawn tick | cells read by `data-label` |
 | [TibiaBoss](https://www.tibiaboss.com/world/havera) | status, chance, days, observation count | `data-*` attributes on each card |
+
+TibiaBoss publishes a percentage even off a single observation — it rates Ferumbras at
+13% where every other source says 0% — so its figure is only accepted once it rests on
+at least three observations and the row is not marked stale.
 
 A source that breaks is reported as failed in the message footer and drops out of the
 consensus — it never aborts the run.
@@ -92,6 +110,10 @@ further day carries a roughly constant chance (Ferumbras sits near 1/15 per day)
 
 For each boss, `src/model.js` takes the intervals between its own appearances on Havera and:
 
+- **collapses runs of consecutive days into one sighting.** Kill statistics have no
+  clock, so a boss that spawns just before the daily refresh and dies just after
+  registers on two days and would look like a one-day respawn. Only strictly adjacent
+  days are merged, so a boss with several real spawn points keeps its short intervals.
 - reports **0%** while `daysSince < minGap` — it is still on cooldown;
 - past that, estimates the **discrete hazard**: of all intervals that reached day *d*,
   what fraction ended on day *d*;
@@ -99,15 +121,20 @@ For each boss, `src/model.js` takes the intervals between its own appearances on
   certainty (an early version rated a boss seen twice, 29 days apart, at 100%);
 - caps the result — never above 90%, never above 50% on a thin sample.
 
-Three flags come out of the same data:
+Four flags come out of the same data:
 
-- ⚠️ **unreliable** — `minGap ≤ 2` days, the signature of several independent spawn
-  points, which the wiki article explicitly calls unpredictable from kill statistics
-  (White Pale, Tyrn, Grorlam); or intervals too dispersed to mean anything.
-- ♻️ **frequent** — killed on ≥ 20% of covered days with a 1-day minimum. These are
-  quest-gated or instanced bosses (Dream Courts, Kilmaresh, Soul War). "When does it
-  spawn" is the wrong question for them, so they get their own name-only list instead of
-  crowding the ranking.
+- 👀 **still up** — the last sighting has no kill recorded on any of its days. Either it
+  despawned or it is still there. Reported for its own section, not ranked.
+- ⚠️ **unreliable** — `minGap ≤ 2` days after collapsing, the signature of several
+  independent spawn points, which the wiki article explicitly calls unpredictable from
+  kill statistics (White Pale, Tyrn, Grorlam); or intervals too dispersed to mean anything.
+- ♻️ **frequent** — seen on ≥ 20% of covered days with a short minimum. Quest-gated or
+  instanced bosses (Dream Courts, Kilmaresh, Soul War). "When does it spawn" is the wrong
+  question, so they get a name-only list instead of crowding the ranking.
+- 🥶 **dormant** — more than 3× its longest ever interval, and at least 60 days. Not
+  "due", just nobody is doing it (Zarabustor at 205 days against a 45-day maximum). The
+  rule deliberately leaves the genuine long cycles alone: Ferumbras at 119 days against a
+  175-day maximum stays in the ranking.
 - 🌙 **event** — tied to a world event rather than a cooldown.
 
 The final number per boss is a weighted mean: **our model at weight 3**, each external
@@ -127,30 +154,32 @@ marker — 🟢 tight, 🟠 some spread, 🔴 the sites genuinely disagree.
 
 ### 2. Repository
 
-Create a repository on GitHub and upload this folder (drag-and-drop in the web UI works;
-no git client needed). A **public** repository gets unlimited Actions minutes.
+Create a repository on GitHub and upload this folder. A **public** repository gets
+unlimited Actions minutes; a private one gets 2000/month, of which this bot uses ~60.
 
 ### 3. Secrets
 
-In the repository: **Settings → Secrets and variables → Actions → New repository secret**
+**Settings → Secrets and variables → Actions → New repository secret**
 
 | Name | Value |
 | --- | --- |
 | `TELEGRAM_BOT_TOKEN` | the BotFather token, complete — a truncated paste produces `Unauthorized` |
 | `TELEGRAM_CHAT_ID` | your numeric chat id |
 
-Also check **Settings → Actions → General → Workflow permissions** is set to
-**Read and write permissions**, so the workflow can commit the updated history.
+Also set **Settings → Actions → General → Workflow permissions** to **Read and write
+permissions**, so the workflow can commit the updated history.
 
 ### 4. First run
 
-**Actions → Daily Nemesis report → Run workflow.** Tick `dry_run` for the first one: it
-builds the history from the archive, prints the report to the log and sends nothing.
+**Actions → Daily Nemesis report → Run workflow.** GitHub labels the inputs with their
+descriptions rather than their names, so `dry_run` reads *"Build the report and print it
+without sending to Telegram"*. Tick it for the first run.
 
-The first run backfills 400 days (about a minute) and commits `data/history.json`. Every
-later run only fetches that day's snapshot and appends to it.
+That run backfills 400 days (about a minute), prints the report to the log, sends
+nothing, and still commits `data/history.json` — the backfill is derived data, and
+throwing it away would only mean doing it again.
 
-When it looks right, run it again with `dry_run` unticked.
+When the log looks right, run it again with the box unticked.
 
 ### Schedule
 
@@ -161,6 +190,19 @@ report goes out whether Europe is on CET or CEST.
 Kill statistics refresh around **03:00–04:00 CE(S)T** — roughly six hours before server
 save, not at server save. The archive repository polls at 04:00, 04:30 and 05:00 Berlin
 time, so by 05:30 the frozen snapshot is reliably in place.
+
+> Triggering the workflow by hand before 05:00 Berlin is fine, but it will report the
+> *previous* killstats day while the third-party sites have already moved on to the new
+> one, which shows up as extra 🔴 disagreement markers.
+
+---
+
+## Changing the recording rule
+
+`src/history.js` exports a `SCHEMA_VERSION`. When the rule for what counts as an
+appearance changes, bump it: `src/index.js` sees the stored history was built under an
+older version, throws it away and rebuilds from the archive, so the improvement reaches
+every day of history rather than only the days from that point on.
 
 ---
 
@@ -173,10 +215,10 @@ imports the **real** modules over HTTP and runs them against live data.
 powershell -ExecutionPolicy Bypass -File "_Testing\serve.ps1"
 ```
 
-Then open <http://127.0.0.1:8787/_Testing/harness.html>. It runs the unit checks, builds
-a 180-day history from the archive, fetches all five external sources through the
-server's `/proxy` endpoint (they block cross-origin reads) and renders the finished
-Telegram messages.
+Then open <http://127.0.0.1:8787/_Testing/harness.html>. It runs 36 unit checks, builds a
+400-day history from the archive, fetches all five external sources through the server's
+`/proxy` endpoint (they block cross-origin reads) and renders the finished Telegram
+messages.
 
 Two things make this possible and are worth preserving:
 
@@ -186,7 +228,7 @@ Two things make this possible and are worth preserving:
 
 `raw.githubusercontent.com` is fetched directly rather than through the proxy — it
 already serves `Access-Control-Allow-Origin: *`, and the single-threaded PowerShell
-listener would serialise 180 requests.
+listener would serialise 400 requests.
 
 ---
 
@@ -196,10 +238,10 @@ listener would serialise 180 requests.
 src/
   config.js          world, archives, thresholds, model tunables — start here
   index.js           the daily run
-  model.js           the probability estimate
+  model.js           the probability estimate and its flags
   consensus.js       merges our model with the external opinions, buckets the result
   report.js          builds the Telegram messages, splits them under the 4096 limit
-  history.js         pure history logic (browser-safe)
+  history.js         pure history logic + SCHEMA_VERSION (browser-safe)
   store.js           the only module that touches the filesystem
   bosslist.js        indexes the nemesis list and its name aliases
   backfill.js        rebuilds history from the archive
@@ -208,7 +250,7 @@ src/
   sources/           killstats + one module per third-party site
   data/nemesis.json  the 108 nemesis bosses, regenerated on every run
 data/
-  history.json       appearance dates per boss — committed by the workflow
+  history.json       appearances and kills per boss — committed by the workflow
   state.json         last reported killstats day, so a re-run does not duplicate a send
 scripts/
   backfill.js        node scripts/backfill.js [from-date]
@@ -238,7 +280,8 @@ BACKFILL_DAYS=900 node scripts/backfill.js
   a kill never shows up in the kill statistics at all.
 - Kill statistics have no time of day. A boss killed just before the daily refresh and
   another killed just after look one day apart when they were minutes apart — the
-  one-day fuzziness the wiki article calls "low chance".
+  one-day fuzziness the wiki article calls "low chance", and the reason consecutive days
+  are collapsed into one sighting.
 - Sites disagree about last-seen dates by a day for exactly this reason (GuildStats says
   Ferumbras 2026-04-23, ExevoPan says 2026-04-24). Our own model uses the archive's day
   labels consistently, so its intervals are internally consistent.
