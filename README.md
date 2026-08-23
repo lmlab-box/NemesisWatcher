@@ -102,6 +102,29 @@ stopwatch, not world data), [tibiabosses.com](https://www.tibiabosses.com/) (gui
 
 ---
 
+## Message layout
+
+The report arrives as five messages. Only the two you act on every morning are expanded:
+
+| Message | Content | Folded? |
+| --- | --- | --- |
+| 1 | header + **who died in the window** | folded |
+| 2 | **🔥 alta probabilidad hoy** | expanded |
+| 3–4 | **🟡 posible hoy** | expanded |
+| 5 | seen alive · entering their window · always available · dormant · sources | each folded separately |
+
+Folding uses Telegram's `<blockquote expandable>` (Bot API 7.4+): the title and its count
+stay visible, the body opens on tap, and opening one section leaves the others alone.
+Clients too old to know the attribute render a plain quote instead. A blockquote cannot
+straddle two messages, so a section too long to fit is truncated with "… y N más" rather
+than split.
+
+"🩸 Apareció y NO lo mataron" is the exception — it appears only when it has content, is
+at most a couple of lines, and is the one thing that says *this may be standing there
+right now*, so it stays expanded.
+
+---
+
 ## The probability model
 
 Following [TibiaWiki:Bosses_Spawn_Frequency](https://tibia.fandom.com/wiki/TibiaWiki:Bosses_Spawn_Frequency):
@@ -237,7 +260,7 @@ listener would serialise 400 requests.
 
 ---
 
-## Layout
+## File layout
 
 ```
 src/

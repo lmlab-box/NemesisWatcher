@@ -18,7 +18,7 @@ export async function get(url, { as = 'text', headers = {}, retries = HTTP.retri
         headers: { 'user-agent': HTTP.userAgent, accept: '*/*', ...headers },
       });
       if (!res.ok) {
-        const retryable = res.status === 429 || res.status >= 500;
+        const retryable = res.status === 429 || res.status === 403 || res.status >= 500;
         lastError = new Error(`HTTP ${res.status} for ${url}`);
         if (!retryable) throw lastError;
         continue;
@@ -26,7 +26,7 @@ export async function get(url, { as = 'text', headers = {}, retries = HTTP.retri
       return as === 'json' ? await res.json() : await res.text();
     } catch (err) {
       lastError = err;
-      if (err?.message?.startsWith('HTTP 4')) throw err;
+      if (/^HTTP 4/.test(err?.message ?? '') && !/^HTTP (403|429)/.test(err.message)) throw err;
     } finally {
       clearTimeout(timer);
     }

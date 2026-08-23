@@ -8,6 +8,16 @@ const SAFE_LIMIT = 3800;
 const pct = (value) => `${Math.round(value * 100)}%`;
 const link = (row) => `<a href="${escapeHtml(row.wiki)}">${escapeHtml(row.name)}</a>`;
 
+/**
+ * Telegram renders `<blockquote expandable>` collapsed, showing the first few lines with
+ * a "show more" affordance (Bot API 7.4+). Clients too old to know the attribute fall
+ * back to a plain quote, which still reads fine.
+ *
+ * Only the two sections you act on every morning — what can spawn today — are left
+ * expanded. Everything else is reference material and stays folded away.
+ */
+const collapsed = (body) => `<blockquote expandable>${body}</blockquote>`;
+
 const SOURCE_SHORT = {
   exevopan: 'Exevo',
   guildstats: 'GS',
@@ -77,6 +87,46 @@ function pack(header, blocks, { empty = null } = {}) {
   return messages;
 }
 
+/**
+ * Bundles the reference sections into as few messages as possible, each section folded
+ * into its own expandable quote so opening one leaves the others alone. A section too
+ * long to fit is truncated rather than split, because a blockquote cannot straddle two
+ * messages.
+ */
+function packCollapsed(sections) {
+  const messages = [];
+  let current = '';
+
+  for (const { title, lines } of sections) {
+    if (!lines.length) continue;
+
+    let body = lines.join('\n');
+    let block = `${title}\n${collapsed(body)}`;
+
+    if (block.length > SAFE_LIMIT) {
+      const kept = [];
+      let size = 0;
+      for (const line of lines) {
+        if (size + line.length + 40 > SAFE_LIMIT - title.length) break;
+        kept.push(line);
+        size += line.length + 1;
+      }
+      body = `${kept.join('\n')}\n… y ${lines.length - kept.length} más`;
+      block = `${title}\n${collapsed(body)}`;
+    }
+
+    if (current && `${current}\n\n${block}`.length > SAFE_LIMIT) {
+      messages.push(current);
+      current = block;
+    } else {
+      current = current ? `${current}\n\n${block}` : block;
+    }
+  }
+
+  if (current) messages.push(current);
+  return messages;
+}
+
 export function buildReport({ day, buckets, history, externals, bossList }) {
   const windowStart = addDays(day, -1);
   const messages = [];
@@ -87,95 +137,93 @@ export function buildReport({ day, buckets, history, externals, bossList }) {
     `🗓 Killstats del ${shortLabel(day)} (ventana ≈ ${shortLabel(windowStart)} 03:00 → ${shortLabel(day)} 03:00 CE(S)T)`,
   ].join('\n');
 
-  const killedBlocks = buckets.killed.map(
+  const killedLines = buckets.killed.map(
     (row) => `• ${link(row)} ×${row.killedToday}${row.hard ? ' 💪' : ''}`,
   );
   messages.push(
-    ...pack(
-      `${header}\n\n☠️ <b>Murieron en esta ventana</b> — su contador se reinició, no los busques hoy`,
-      killedBlocks,
-      { empty: '<i>Ningún nemesis registrado en esta ventana.</i>' },
-    ),
+    `${header}\n\n☠️ <b>Murieron en esta ventana</b> — su contador se reinició\n${
+      killedLines.length
+        ? collapsed(killedLines.join('\n'))
+        : '<i>Ningún nemesis registrado en esta ventana.</i>'
+    }`,
   );
 
-  // ---- 2. Seen alive and not killed — the most actionable thing in the report ---------
-  const survivedBlocks = buckets.survived.map(
-    (row) => `• ${link(row)} — mató a <b>${row.playersKilledToday}</b> jugador(es) y nadie lo mató`,
-  );
-  if (survivedBlocks.length > 0) {
+  // ---- 2. Seen alive and not killed — short, rare, and the most actionable ------------
+  // Left expanded on purpose: it is at most a couple of lines and it is the one thing
+  // that says "this may be standing there right now".
+  if (buckets.survived.length > 0) {
     messages.push(
-      ...pack('🩸 <b>Apareció y NO lo mataron</b> — puede seguir arriba ahora mismo', survivedBlocks),
+      ...pack(
+        '🩸 <b>Apareció y NO lo mataron</b> — puede seguir arriba ahora mismo',
+        buckets.survived.map(
+          (row) => `• ${link(row)} — mató a <b>${row.playersKilledToday}</b> jugador(es) y nadie lo mató`,
+        ),
+      ),
     );
   }
 
-  const stillUpBlocks = buckets.stillUp.map(
-    (row) => `• ${link(row)} — visto vivo hace <b>${row.own.daysSince}d</b> (${shortLabel(row.own.lastSeen)}), sin muerte registrada desde entonces`,
-  );
-  if (stillUpBlocks.length > 0) {
-    messages.push(
-      ...pack(`👀 <b>Vistos vivos y nunca cazados</b> (últimos ${THRESHOLDS.stillUpMaxDays} días)`, stillUpBlocks),
-    );
-  }
-
-  // ---- 3. Most likely to spawn today -------------------------------------------------
-  const high = buckets.high.slice(0, THRESHOLDS.maxPerBucket);
+  // ---- 3. The two sections you actually act on, expanded ------------------------------
   messages.push(
     ...pack(
       `🔥 <b>Alta probabilidad hoy</b> (≥ ${pct(THRESHOLDS.high)})`,
-      high.map((row, i) => candidateBlock(row, i + 1)),
+      buckets.high.slice(0, THRESHOLDS.maxPerBucket).map((row, i) => candidateBlock(row, i + 1)),
       { empty: '<i>Ninguno supera el umbral hoy.</i>' },
     ),
   );
 
-  // ---- 4. Possible, plus what enters its window shortly -------------------------------
-  const possible = buckets.possible.slice(0, THRESHOLDS.maxPerBucket);
   messages.push(
     ...pack(
       `🟡 <b>Posible hoy</b> (${pct(THRESHOLDS.possible)} – ${pct(THRESHOLDS.high)})`,
-      possible.map((row, i) => candidateBlock(row, i + 1)),
+      buckets.possible.slice(0, THRESHOLDS.maxPerBucket).map((row, i) => candidateBlock(row, i + 1)),
       { empty: '<i>Nada en este rango.</i>' },
     ),
   );
 
-  const soonBlocks = buckets.soon.map(
-    (row) => `• ${link(row)} — entra en ventana en <b>${row.own.daysToWindow}d</b> (${row.own.daysSince}d sin verse, min ${row.own.minGap}d)`,
-  );
-  if (soonBlocks.length > 0) {
-    messages.push(...pack(`🕒 <b>Entran en ventana en ≤ ${THRESHOLDS.soonDays} días</b>`, soonBlocks));
-  }
-
-  // ---- 5. Always-available bosses, listed but never predicted ------------------------
-  if (buckets.frequent.length > 0) {
-    const names = buckets.frequent.map((row) => link(row)).join(' · ');
-    messages.push(
-      `♻️ <b>Disponibles casi cualquier día</b> (quest o instanciados, sin ventana que predecir)\n${names}`,
-    );
-  }
-
-  if (buckets.dormant.length > 0) {
-    const names = buckets.dormant
-      .map((row) => `${link(row)} <i>(${row.own.daysSince}d)</i>`)
-      .join(' · ');
-    messages.push(
-      `🥶 <b>Sin rastro desde hace mucho</b> (más de ${MODEL.dormantFactor}× su intervalo más largo observado — probablemente nadie los está haciendo)\n${names}`,
-    );
-  }
-
-  // ---- 6. Provenance ------------------------------------------------------------------
+  // ---- 4. Reference material, folded ---------------------------------------------------
   const sourceStatus = externals
     .map((s) => (s.ok ? `✅ ${s.label}` : `❌ ${s.label} (${escapeHtml(s.error ?? 'error')})`))
     .join(' · ');
 
   messages.push(
-    [
-      '📚 <b>Fuentes</b>',
-      sourceStatus,
-      '',
-      `🧠 Modelo propio: historial de ${WORLD} ${history.coverage.from} → ${history.coverage.to} (${history.coverage.days} días, ${bossList.bosses.length} nemesis).`,
-      '📐 El % es el hazard empírico de los intervalos observados, suavizado hacia 1/(espera media), ponderado con las demás fuentes.',
-      '🟢 fuentes de acuerdo · 🟠 discrepan algo · 🔴 discrepan mucho · ⚠️ intervalos poco fiables (varios spawns o muy dispersos) · 🌙 boss de evento · 💪 hard nemesis',
-      '❗ Estimación, no garantía. Un boss tameado o cazado sin registrar kill no aparece en killstats.',
-    ].join('\n'),
+    ...packCollapsed([
+      {
+        title: `👀 <b>Vistos vivos y nunca cazados</b> · ${buckets.stillUp.length} (últimos ${THRESHOLDS.stillUpMaxDays} días)`,
+        lines: buckets.stillUp.map(
+          (row) => `• ${link(row)} — hace <b>${row.own.daysSince}d</b> (${shortLabel(row.own.lastSeen)}), sin muerte registrada desde entonces`,
+        ),
+      },
+      {
+        title: `🕒 <b>Entran en ventana en ≤ ${THRESHOLDS.soonDays} días</b> · ${buckets.soon.length}`,
+        lines: buckets.soon.map(
+          (row) => `• ${link(row)} — en <b>${row.own.daysToWindow}d</b> (${row.own.daysSince}d sin verse, min ${row.own.minGap}d)`,
+        ),
+      },
+      {
+        title: `♻️ <b>Disponibles casi cualquier día</b> · ${buckets.frequent.length}`,
+        lines: buckets.frequent.length ? [buckets.frequent.map((row) => link(row)).join(' · ')] : [],
+      },
+      {
+        title: `🥶 <b>Sin rastro desde hace mucho</b> · ${buckets.dormant.length}`,
+        lines: buckets.dormant.length
+          ? [
+              `Más de ${MODEL.dormantFactor}× su intervalo más largo observado — probablemente nadie los está haciendo.`,
+              buckets.dormant.map((row) => `${link(row)} <i>(${row.own.daysSince}d)</i>`).join(' · '),
+            ]
+          : [],
+      },
+      {
+        title: '📚 <b>Fuentes y método</b>',
+        lines: [
+          sourceStatus,
+          '',
+          `🧠 Modelo propio: historial de ${WORLD} ${history.coverage.from} → ${history.coverage.to} (${history.coverage.days} días, ${bossList.bosses.length} nemesis).`,
+          '📐 El % es el hazard empírico de los intervalos observados, suavizado hacia 1/(espera media), ponderado con las demás fuentes.',
+          '🟢 fuentes de acuerdo · 🟠 discrepan algo · 🔴 discrepan mucho',
+          '⚠️ intervalos poco fiables (varios spawns o muy dispersos) · 🌙 boss de evento · 💪 hard nemesis',
+          '❗ Estimación, no garantía. Un boss tameado o cazado sin registrar kill no aparece en killstats.',
+        ],
+      },
+    ]),
   );
 
   return messages
