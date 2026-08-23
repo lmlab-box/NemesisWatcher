@@ -73,6 +73,23 @@ try {
   check('kill recorded', h.bosses.Grorlam.killedOn, ['2026-08-13']);
   check('schema stamped', h.schemaVersion, history.SCHEMA_VERSION);
 
+  // A file written before versioning existed must be detected as stale, not silently
+  // adopted — the defaults must never fill in a schemaVersion the file does not have.
+  const legacyFile = { world: 'Havera', coverage: { from: '2025-07-18', to: '2026-08-22', days: 401 },
+    bosses: { "Gaz'haragoth": { appearances: ['2025-09-03', '2025-10-18'] } } };
+  const legacy = history.hydrateHistory(legacyFile);
+  check('legacy file detected as stale', legacy.stale, true);
+  check('legacy file reported as version 1', legacy.storedVersion, 1);
+  check('legacy history discarded', Object.keys(legacy.history.bosses).length, 0);
+
+  const current = history.hydrateHistory({ ...legacyFile, schemaVersion: history.SCHEMA_VERSION });
+  check('current file kept', current.stale, false);
+  check('current history preserved', Object.keys(current.history.bosses).length, 1);
+
+  const absent = history.hydrateHistory(null);
+  check('missing file is not stale', absent.stale, false);
+  check('missing file starts empty', absent.history.coverage.from, null);
+
   // ---- probability model -----------------------------------------------------------
   const every10 = ['2026-01-01','2026-01-11','2026-01-21','2026-01-31','2026-02-10','2026-02-20','2026-03-02'];
   const cooling = model.analyzeBoss(every10, '2026-03-05', { killedOn: every10 });

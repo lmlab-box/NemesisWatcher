@@ -2,12 +2,14 @@ import { WORLD } from './config.js';
 import { daysBetween } from './lib/dates.js';
 
 /**
- * Bump this whenever the recorded shape or the recording rule changes. `src/index.js`
- * discards a history built under an older version and rebuilds it from the archive,
- * so an improvement to the rule reaches the whole history instead of only new days.
+ * Bump this whenever the recorded shape or the recording rule changes. `hydrateHistory`
+ * discards a history built under an older version, and `src/index.js` rebuilds it from
+ * the archive, so an improvement to the rule reaches the whole history instead of only
+ * the days from that point on.
  *
  * 1 — appearances recorded only when the boss was killed
- * 2 — appearances also recorded when the boss killed players without dying
+ * 2 — appearances also recorded when the boss killed players without dying,
+ *     and `killedOn` records which of those days it actually died
  */
 export const SCHEMA_VERSION = 2;
 
@@ -23,6 +25,31 @@ export function emptyHistory() {
     coverage: { from: null, to: null, days: 0 },
     bosses: {},
   };
+}
+
+/**
+ * Turns whatever was on disk into a usable history, deciding whether it can be extended
+ * or has to be thrown away and rebuilt.
+ *
+ * The version must be read from the stored object *before* any defaults are merged in.
+ * Filling defaults first and spreading the stored data on top hides a missing
+ * `schemaVersion` behind the current one, which silently keeps a stale history alive —
+ * it stamped a schema-1 file as schema 2 and left every boss with kill-only appearances.
+ *
+ * @param {object|null} stored parsed data/history.json, or null when absent
+ */
+export function hydrateHistory(stored) {
+  if (!stored || !stored.coverage?.from) {
+    return { history: emptyHistory(), storedVersion: null, stale: false };
+  }
+
+  // A file written before versioning existed is version 1 by definition.
+  const storedVersion = stored.schemaVersion ?? 1;
+  if (storedVersion !== SCHEMA_VERSION) {
+    return { history: emptyHistory(), storedVersion, stale: true };
+  }
+
+  return { history: { ...emptyHistory(), ...stored }, storedVersion, stale: false };
 }
 
 /**

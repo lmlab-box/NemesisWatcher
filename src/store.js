@@ -1,7 +1,6 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { emptyHistory } from './history.js';
 import { indexBossList } from './bosslist.js';
 
 const HISTORY_PATH = fileURLToPath(new URL('../data/history.json', import.meta.url));
@@ -26,9 +25,12 @@ export async function loadBossList() {
   return indexBossList(await readJson(BOSSLIST_PATH, null));
 }
 
-export async function loadHistory() {
-  return { ...emptyHistory(), ...(await readJson(HISTORY_PATH, {})) };
-}
+/**
+ * Returns the raw parsed file, or null. Interpreting it — including deciding whether it
+ * is too old to keep — is `hydrateHistory`'s job: merging defaults in here would hide a
+ * missing `schemaVersion` behind the current one.
+ */
+export const loadHistoryFile = () => readJson(HISTORY_PATH, null);
 
 export const saveHistory = (history) => writeJson(HISTORY_PATH, history);
 

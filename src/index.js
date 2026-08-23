@@ -1,7 +1,7 @@
 import { WORLD, BACKFILL_DAYS } from './config.js';
 import { currentKillstatsDay, addDays } from './lib/dates.js';
-import { loadBossList, loadHistory, saveHistory, loadState, saveState } from './store.js';
-import { applyDay, emptyHistory, SCHEMA_VERSION } from './history.js';
+import { loadBossList, loadHistoryFile, saveHistory, loadState, saveState } from './store.js';
+import { applyDay, hydrateHistory, SCHEMA_VERSION } from './history.js';
 import { extractDailyActivity, fetchLive, fetchArchivedDay } from './sources/killstats.js';
 import { fetchExternalSources } from './sources/index.js';
 import { backfill } from './backfill.js';
@@ -43,15 +43,12 @@ async function main() {
   }
 
   const bossList = await loadBossList();
-  let history = await loadHistory();
+  const { history, storedVersion, stale } = hydrateHistory(await loadHistoryFile());
   log(`tracking ${bossList.bosses.length} nemesis bosses`);
-
-  // A history recorded under an older rule is rebuilt rather than extended, so a fix to
-  // how appearances are counted reaches every day, not only the ones from here on.
-  if (history.coverage.from && history.schemaVersion !== SCHEMA_VERSION) {
-    log(`history schema ${history.schemaVersion ?? 1} is stale (current ${SCHEMA_VERSION}) — rebuilding`);
-    history = emptyHistory();
+  if (stale) {
+    log(`stored history is schema ${storedVersion}, current is ${SCHEMA_VERSION} — rebuilding from the archive`);
   }
+
 
   if (!history.coverage.from && process.env.AUTO_BACKFILL !== '0') {
     const from = addDays(day, -BACKFILL_DAYS);
