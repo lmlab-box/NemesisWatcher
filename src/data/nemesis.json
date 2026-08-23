@@ -1,0 +1,979 @@
+{
+    "generatedAt":  "2026-08-22",
+    "source":  "tibiamaps/tibia-kill-stats",
+    "count":  108,
+    "bosses":  [
+                   {
+                       "name":  "Alptramun",
+                       "hard":  false,
+                       "event":  true,
+                       "killStatsNames":  [
+                                              "Alptramun"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Alptramun"
+                   },
+                   {
+                       "name":  "Anmothra",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Anmothra"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Anmothra"
+                   },
+                   {
+                       "name":  "Arachir the Ancient One",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Arachir the Ancient One"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Arachir_the_Ancient_One"
+                   },
+                   {
+                       "name":  "Arthom the Hunter",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Arthom The Hunter"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Arthom_the_Hunter"
+                   },
+                   {
+                       "name":  "Bakragore",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Bakragore"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Bakragore"
+                   },
+                   {
+                       "name":  "Bane Lord",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Bane Lord"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Bane_Lord"
+                   },
+                   {
+                       "name":  "Barbaria",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Barbaria"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Barbaria"
+                   },
+                   {
+                       "name":  "Battlemaster Zunzu",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Battlemaster Zunzu"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Battlemaster_Zunzu"
+                   },
+                   {
+                       "name":  "Big Boss Trolliver",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Big Boss Trolliver"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Big_Boss_Trolliver"
+                   },
+                   {
+                       "name":  "Burster",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Burster"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Burster"
+                   },
+                   {
+                       "name":  "Captain Jones",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Captain Jones"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Captain_Jones"
+                   },
+                   {
+                       "name":  "Chikhaton",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Chikhaton"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Chikhaton"
+                   },
+                   {
+                       "name":  "Chizzoron the Distorter",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Chizzoron the Distorter"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Chizzoron_the_Distorter"
+                   },
+                   {
+                       "name":  "Countess Sorrow",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Countess Sorrow"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Countess_Sorrow"
+                   },
+                   {
+                       "name":  "Cublarc the Plunderer",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Cublarc the Plunderer"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Cublarc_the_Plunderer"
+                   },
+                   {
+                       "name":  "Devovorga",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Devovorga"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Devovorga"
+                   },
+                   {
+                       "name":  "Dharalion",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Dharalion"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Dharalion"
+                   },
+                   {
+                       "name":  "Diblis the Fair",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Diblis the Fair"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Diblis_the_Fair"
+                   },
+                   {
+                       "name":  "Dracola",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Dracola"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Dracola"
+                   },
+                   {
+                       "name":  "Dreadful Disruptor",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Dreadful Disruptor"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Dreadful_Disruptor"
+                   },
+                   {
+                       "name":  "Dreadmaw",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Dreadmaw"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Dreadmaw"
+                   },
+                   {
+                       "name":  "Elvira Hammerthrust",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Elvira Hammerthrust"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Elvira_Hammerthrust"
+                   },
+                   {
+                       "name":  "Feroxa",
+                       "hard":  false,
+                       "event":  true,
+                       "killStatsNames":  [
+                                              "Feroxa"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Feroxa"
+                   },
+                   {
+                       "name":  "Ferumbras",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Ferumbras"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Ferumbras"
+                   },
+                   {
+                       "name":  "Ferumbras Mortal Shell",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Ferumbras Mortal Shell"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Ferumbras_Mortal_Shell"
+                   },
+                   {
+                       "name":  "Flamecaller Zazrak",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Flamecaller Zazrak"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Flamecaller_Zazrak"
+                   },
+                   {
+                       "name":  "Fleabringer",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Fleabringer"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Fleabringer"
+                   },
+                   {
+                       "name":  "Foreman Kneebiter",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Foreman Kneebiter"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Foreman_Kneebiter"
+                   },
+                   {
+                       "name":  "Furyosa",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Furyosa"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Furyosa"
+                   },
+                   {
+                       "name":  "Gaz\u0027haragoth",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Gaz\u0027haragoth"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Gaz\u0027haragoth"
+                   },
+                   {
+                       "name":  "General Murius",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "General Murius"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/General_Murius"
+                   },
+                   {
+                       "name":  "Ghazbaran",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Ghazbaran"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Ghazbaran"
+                   },
+                   {
+                       "name":  "Goshnar\u0027s Megalomania",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Goshnar\u0027s Megalomania"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Goshnar\u0027s_Megalomania"
+                   },
+                   {
+                       "name":  "Grand Mother Foulscale",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Grand Mother Foulscale"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Grand_Mother_Foulscale"
+                   },
+                   {
+                       "name":  "Grandfather Tridian",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Grandfather Tridian"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Grandfather_Tridian"
+                   },
+                   {
+                       "name":  "Gravelord Oshuran",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Gravelord Oshuran"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Gravelord_Oshuran"
+                   },
+                   {
+                       "name":  "Groam",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Groam"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Groam"
+                   },
+                   {
+                       "name":  "Grorlam",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Grorlam"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Grorlam"
+                   },
+                   {
+                       "name":  "Hairman the Huge",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Hairman the Huge"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Hairman_the_Huge"
+                   },
+                   {
+                       "name":  "Hatebreeder",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Hatebreeder"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Hatebreeder"
+                   },
+                   {
+                       "name":  "High Templar Cobrass",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "High Templar Cobrass"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/High_Templar_Cobrass"
+                   },
+                   {
+                       "name":  "Hirintror",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Hirintror"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Hirintror"
+                   },
+                   {
+                       "name":  "Horestis",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Horestis"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Horestis"
+                   },
+                   {
+                       "name":  "Irahsae",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Irahsae"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Irahsae"
+                   },
+                   {
+                       "name":  "Izcandar Champion of Summer",
+                       "hard":  false,
+                       "event":  true,
+                       "killStatsNames":  [
+                                              "Izcandar Champion of Summer"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Izcandar_Champion_of_Summer"
+                   },
+                   {
+                       "name":  "Izcandar Champion of Winter",
+                       "hard":  false,
+                       "event":  true,
+                       "killStatsNames":  [
+                                              "Izcandar Champion of Winter"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Izcandar_Champion_of_Winter"
+                   },
+                   {
+                       "name":  "Izcandar the Banished",
+                       "hard":  false,
+                       "event":  true,
+                       "killStatsNames":  [
+                                              "Izcandar the Banished"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Izcandar_the_Banished"
+                   },
+                   {
+                       "name":  "Jesse the Wicked",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Jesse the Wicked"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Jesse_the_Wicked"
+                   },
+                   {
+                       "name":  "King Chuck",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "King Chuck"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/King_Chuck"
+                   },
+                   {
+                       "name":  "Lizard Gate Guardian",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Lizard Gate Guardian"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Lizard_Gate_Guardian"
+                   },
+                   {
+                       "name":  "Mahatheb",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Mahatheb"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Mahatheb"
+                   },
+                   {
+                       "name":  "Malofur Mangrinder",
+                       "hard":  false,
+                       "event":  true,
+                       "killStatsNames":  [
+                                              "Malofur Mangrinder"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Malofur_Mangrinder"
+                   },
+                   {
+                       "name":  "Man in the Cave",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Man in the Cave"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Man_in_the_Cave"
+                   },
+                   {
+                       "name":  "Massacre",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Massacre"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Massacre"
+                   },
+                   {
+                       "name":  "Maxxenius",
+                       "hard":  false,
+                       "event":  true,
+                       "killStatsNames":  [
+                                              "Maxxenius"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Maxxenius"
+                   },
+                   {
+                       "name":  "Morgaroth",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Morgaroth"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Morgaroth"
+                   },
+                   {
+                       "name":  "Mornenion",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Mornenion"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Mornenion"
+                   },
+                   {
+                       "name":  "Morshabaal",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Morshabaal"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Morshabaal"
+                   },
+                   {
+                       "name":  "Mr. Punish",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Mr. Punish"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Mr._Punish"
+                   },
+                   {
+                       "name":  "Ocyakao",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Ocyakao"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Ocyakao"
+                   },
+                   {
+                       "name":  "Omrafir",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Omrafir"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Omrafir"
+                   },
+                   {
+                       "name":  "Oodok Witchmaster",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Oodok Witchmaster"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Oodok_Witchmaster"
+                   },
+                   {
+                       "name":  "Orshabaal",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Orshabaal"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Orshabaal"
+                   },
+                   {
+                       "name":  "Phosphorus",
+                       "hard":  false,
+                       "event":  true,
+                       "killStatsNames":  [
+                                              "Phosphorus"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Phosphorus"
+                   },
+                   {
+                       "name":  "Phrodomo",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Phrodomo"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Phrodomo"
+                   },
+                   {
+                       "name":  "Plagueroot",
+                       "hard":  false,
+                       "event":  true,
+                       "killStatsNames":  [
+                                              "Plagueroot"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Plagueroot"
+                   },
+                   {
+                       "name":  "Raxias",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Raxias"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Raxias"
+                   },
+                   {
+                       "name":  "Robby the Reckless",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Robby the Reckless"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Robby_the_Reckless"
+                   },
+                   {
+                       "name":  "Rotrender",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Rotrender"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Rotrender"
+                   },
+                   {
+                       "name":  "Rotworm Queen",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Rotworm Queen"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Rotworm_Queen"
+                   },
+                   {
+                       "name":  "Rukor Zad",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Rukor Zad"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Rukor_Zad"
+                   },
+                   {
+                       "name":  "Shlorg",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Shlorg"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Shlorg"
+                   },
+                   {
+                       "name":  "Sir Valorcrest",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Sir Valorcrest"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Sir_Valorcrest"
+                   },
+                   {
+                       "name":  "Smuggler Baron Silvertoe",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Smuggler Baron Silvertoe"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Smuggler_Baron_Silvertoe"
+                   },
+                   {
+                       "name":  "Teneshpar",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Teneshpar"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Teneshpar"
+                   },
+                   {
+                       "name":  "The Abomination",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "The Abomination"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/The_Abomination"
+                   },
+                   {
+                       "name":  "The Big Bad One",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "The Big Bad One"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/The_Big_Bad_One"
+                   },
+                   {
+                       "name":  "The Blightfather",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "The Blightfather"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/The_Blightfather"
+                   },
+                   {
+                       "name":  "The Evil Eye",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "The Evil Eye"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/The_Evil_Eye"
+                   },
+                   {
+                       "name":  "The First Dragon",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "The First Dragon"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/The_First_Dragon"
+                   },
+                   {
+                       "name":  "The Frog Prince",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "The Frog Prince"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/The_Frog_Prince"
+                   },
+                   {
+                       "name":  "The Handmaiden",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "The Handmaiden"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/The_Handmaiden"
+                   },
+                   {
+                       "name":  "The Hungerer",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "The Hungerer"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/The_Hungerer"
+                   },
+                   {
+                       "name":  "The Imperor",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "The Imperor"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/The_Imperor"
+                   },
+                   {
+                       "name":  "The Last Lore Keeper",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "The Last Lore Keeper"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/The_Last_Lore_Keeper"
+                   },
+                   {
+                       "name":  "The Manhunter",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "The Manhunter"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/The_Manhunter"
+                   },
+                   {
+                       "name":  "The Mean Masher",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "The Mean Masher"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/The_Mean_Masher"
+                   },
+                   {
+                       "name":  "The Mutated Pumpkin",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "The Mutated Pumpkin"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/The_Mutated_Pumpkin"
+                   },
+                   {
+                       "name":  "The Old Whopper",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "The Old Whopper"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/The_Old_Whopper"
+                   },
+                   {
+                       "name":  "The Pale Count",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "The Pale Count"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/The_Pale_Count"
+                   },
+                   {
+                       "name":  "The Percht Queen",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "The Percht Queen"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/The_Percht_Queen"
+                   },
+                   {
+                       "name":  "The Plasmother",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "The Plasmother"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/The_Plasmother"
+                   },
+                   {
+                       "name":  "The Voice of Ruin",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "The Voice Of Ruin"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/The_Voice_of_Ruin"
+                   },
+                   {
+                       "name":  "The Welter",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "The Welter"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/The_Welter"
+                   },
+                   {
+                       "name":  "Tyrn",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Tyrn"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Tyrn"
+                   },
+                   {
+                       "name":  "Tzumrah the Dazzler",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Tzumrah The Dazzler"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Tzumrah_the_Dazzler"
+                   },
+                   {
+                       "name":  "Warlord Ruzad",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Warlord Ruzad"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Warlord_Ruzad"
+                   },
+                   {
+                       "name":  "White Pale",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "White Pale"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/White_Pale"
+                   },
+                   {
+                       "name":  "Willi Wasp",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Willi Wasp"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Willi_Wasp"
+                   },
+                   {
+                       "name":  "World Devourer",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "World Devourer"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/World_Devourer"
+                   },
+                   {
+                       "name":  "Xenia",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Xenia"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Xenia"
+                   },
+                   {
+                       "name":  "Yaga the Crone",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Yaga the Crone"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Yaga_the_Crone"
+                   },
+                   {
+                       "name":  "Yakchal",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Yakchal"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Yakchal"
+                   },
+                   {
+                       "name":  "Zarabustor",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Zarabustor"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Zarabustor"
+                   },
+                   {
+                       "name":  "Zevelon Duskbringer",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Zevelon Duskbringer"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Zevelon_Duskbringer"
+                   },
+                   {
+                       "name":  "Zomba",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Zomba"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Zomba"
+                   },
+                   {
+                       "name":  "Zulazza the Corruptor",
+                       "hard":  false,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Zulazza the Corruptor"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Zulazza_the_Corruptor"
+                   },
+                   {
+                       "name":  "Zushuka",
+                       "hard":  true,
+                       "event":  false,
+                       "killStatsNames":  [
+                                              "Zushuka"
+                                          ],
+                       "wiki":  "https://tibia.fandom.com/wiki/Zushuka"
+                   }
+               ]
+}

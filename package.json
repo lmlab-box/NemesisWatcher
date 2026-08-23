@@ -1,0 +1,14 @@
+{
+  "name": "nemesis-watcher",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Daily Telegram report of Nemesis boss spawn chances for the Tibia world Havera",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "report": "node src/index.js",
+    "dry-run": "node src/index.js --dry-run",
+    "backfill": "node scripts/backfill.js",
+    "refresh-lists": "node scripts/refresh-lists.mjs"
+  }
+}

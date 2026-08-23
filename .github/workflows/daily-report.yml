@@ -1,0 +1,72 @@
+name: Daily Nemesis report
+
+on:
+  schedule:
+    # tibia.com refreshes the Kill Statistics around 03:00-04:00 CE(S)T.
+    # Both crons fire every day; the one that lands before 05:00 Berlin time sees a
+    # killstats day it has already reported and exits without sending anything, so
+    # exactly one report goes out whether Europe is on CET or CEST.
+    - cron: '30 3 * * *' # 05:30 CEST / 04:30 CET
+    - cron: '30 4 * * *' # 06:30 CEST / 05:30 CET
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Build the report and print it without sending to Telegram'
+        type: boolean
+        default: false
+      force:
+        description: 'Send again even if this killstats day was already reported'
+        type: boolean
+        default: false
+      backfill_days:
+        description: 'Days of history to rebuild from the archive when history is empty'
+        type: string
+        default: '400'
+
+concurrency:
+  group: nemesis-report
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Syntax check
+        continue-on-error: true
+        run: for f in $(find src scripts -name '*.js' -o -name '*.mjs'); do node --check "$f"; done
+
+      - name: Refresh boss lists
+        continue-on-error: true
+        run: npm run refresh-lists
+
+      - name: Build and send report
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          BACKFILL_DAYS: ${{ inputs.backfill_days || '400' }}
+        run: |
+          ARGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          if [ "${{ inputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
+          node src/index.js $ARGS
+
+      - name: Commit updated history
+        run: |
+          git config user.name  "nemesis-watcher[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data src/data/nemesis.json
+          if git diff --cached --quiet; then
+            echo "nothing to commit"
+          else
+            git commit -m "chore: killstats history $(date -u +%Y-%m-%d)"
+            git push
+          fi
