@@ -34,11 +34,15 @@ jobs:
   report:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
         with:
-          node-version: '20'
+          # A shallow clone cannot rebase onto the remote when the push below is
+          # rejected, and that rebase is the whole point of the retry loop.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
 
       - name: Syntax check
         continue-on-error: true
@@ -64,9 +68,24 @@ jobs:
           git config user.name  "nemesis-watcher[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data src/data/nemesis.json
+
           if git diff --cached --quiet; then
             echo "nothing to commit"
-          else
-            git commit -m "chore: killstats history $(date -u +%Y-%m-%d)"
-            git push
+            exit 0
           fi
+          git commit -m "chore: killstats history $(date -u +%Y-%m-%d)"
+
+          # Anything pushed to main between the checkout and here — a commit of your own,
+          # or a re-run of an older run — makes the push bounce. Rebase onto whatever is
+          # on the remote and try again rather than failing the whole report.
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              echo "pushed on attempt $attempt"
+              exit 0
+            fi
+            echo "push rejected on attempt $attempt, rebasing onto origin/main"
+            git pull --rebase --autostash origin main
+          done
+
+          echo "could not push the history after 3 attempts"
+          exit 1

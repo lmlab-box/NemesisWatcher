@@ -181,6 +181,11 @@ throwing it away would only mean doing it again.
 
 When the log looks right, run it again with the box unticked.
 
+> **Use "Run workflow", not "Re-run jobs".** A re-run replays an *old* run at the commit
+> it was created from, so it runs the old code and tries to push a history built from it.
+> The commit step rebases and retries when that push is rejected, but the report itself
+> will be whatever that older commit produced.
+
 ### Schedule
 
 Two crons fire daily, at 03:30 and 04:30 UTC. Whichever lands before 05:00 Berlin time

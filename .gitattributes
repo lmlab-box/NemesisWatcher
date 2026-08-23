@@ -1,0 +1,4 @@
+# The runner is Linux and the development machine is Windows. Normalising to LF in the
+# repository keeps `git diff --cached --quiet` in the workflow from seeing phantom
+# changes, and silences the "LF will be replaced by CRLF" noise on every add.
+* text=auto eol=lf
