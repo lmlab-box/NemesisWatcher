@@ -82,13 +82,27 @@ try {
   check('legacy file reported as version 1', legacy.storedVersion, 1);
   check('legacy history discarded', Object.keys(legacy.history.bosses).length, 0);
 
-  const current = history.hydrateHistory({ ...legacyFile, schemaVersion: history.SCHEMA_VERSION });
+  // Same data, but shaped as schema 2 writes it — this one must survive untouched.
+  const current = history.hydrateHistory({ ...legacyFile, schemaVersion: history.SCHEMA_VERSION,
+    bosses: { "Gaz'haragoth": { appearances: ['2025-09-03', '2025-10-18'], killedOn: ['2025-10-18'] } } });
   check('current file kept', current.stale, false);
   check('current history preserved', Object.keys(current.history.bosses).length, 1);
 
   const absent = history.hydrateHistory(null);
   check('missing file is not stale', absent.stale, false);
   check('missing file starts empty', absent.history.coverage.from, null);
+
+  // The exact residue that survived the first fix: right version number, old-rule data.
+  const mislabelled = { world: 'Havera', schemaVersion: history.SCHEMA_VERSION,
+    coverage: { from: '2025-07-18', to: '2026-08-25', days: 404 },
+    bosses: { Burster: { appearances: ["2026-08-22"] }, "Willi Wasp": { appearances: ['2026-08-23'], killedOn: ['2026-08-23'] } } };
+  const caught = history.hydrateHistory(mislabelled);
+  check('mislabelled file caught by shape', caught.stale, true);
+  check('reason names the missing field', /killedOn/.test(caught.reason ?? ''), true);
+
+  const healthy = { ...mislabelled, bosses: { Burster: { appearances: ['2026-08-22'], killedOn: ['2026-08-22'] } } };
+  check('healthy schema-2 file kept', history.hydrateHistory(healthy).stale, false);
+  check('force rebuilds a healthy file', history.hydrateHistory(healthy, { force: true }).stale, true);
 
   // Recipients: one secret, several destinations, whatever separator got pasted.
   const tg = await import('/src/telegram.js');

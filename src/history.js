@@ -33,23 +33,43 @@ export function emptyHistory() {
  *
  * The version must be read from the stored object *before* any defaults are merged in.
  * Filling defaults first and spreading the stored data on top hides a missing
- * `schemaVersion` behind the current one, which silently keeps a stale history alive —
- * it stamped a schema-1 file as schema 2 and left every boss with kill-only appearances.
+ * `schemaVersion` behind the current one, which silently keeps a stale history alive.
+ *
+ * The version alone is not enough, though: a file can carry the right number and still
+ * hold data written under the old rule, which is exactly what happened when the bug above
+ * stamped a schema-1 history as schema 2. So the shape is checked too — under this schema
+ * every boss that has been seen carries a `killedOn` array, and a file where that is
+ * missing is rebuilt no matter what version it claims.
  *
  * @param {object|null} stored parsed data/history.json, or null when absent
  */
-export function hydrateHistory(stored) {
+export function hydrateHistory(stored, { force = false } = {}) {
   if (!stored || !stored.coverage?.from) {
-    return { history: emptyHistory(), storedVersion: null, stale: false };
+    return { history: emptyHistory(), storedVersion: null, stale: false, reason: null };
+  }
+
+  if (force) {
+    return { history: emptyHistory(), storedVersion: stored.schemaVersion ?? 1, stale: true, reason: 'rebuild requested' };
   }
 
   // A file written before versioning existed is version 1 by definition.
   const storedVersion = stored.schemaVersion ?? 1;
   if (storedVersion !== SCHEMA_VERSION) {
-    return { history: emptyHistory(), storedVersion, stale: true };
+    return { history: emptyHistory(), storedVersion, stale: true, reason: `schema ${storedVersion}` };
   }
 
-  return { history: { ...emptyHistory(), ...stored }, storedVersion, stale: false };
+  const entries = Object.values(stored.bosses ?? {});
+  const incomplete = entries.filter((e) => e.appearances?.length && !Array.isArray(e.killedOn)).length;
+  if (incomplete > 0) {
+    return {
+      history: emptyHistory(),
+      storedVersion,
+      stale: true,
+      reason: `${incomplete} of ${entries.length} bosses missing killedOn`,
+    };
+  }
+
+  return { history: { ...emptyHistory(), ...stored }, storedVersion, stale: false, reason: null };
 }
 
 /**

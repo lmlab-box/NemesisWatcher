@@ -18,6 +18,10 @@ on:
         description: 'Send again even if this killstats day was already reported'
         type: boolean
         default: false
+      rebuild_history:
+        description: 'Throw away the stored history and rebuild it from the archive'
+        type: boolean
+        default: false
       backfill_days:
         description: 'Days of history to rebuild from the archive when history is empty'
         type: string
@@ -61,6 +65,7 @@ jobs:
           ARGS=""
           if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
           if [ "${{ inputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
+          if [ "${{ inputs.rebuild_history }}" = "true" ]; then ARGS="$ARGS --rebuild"; fi
           node src/index.js $ARGS
 
       - name: Commit updated history

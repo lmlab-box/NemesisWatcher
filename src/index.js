@@ -12,6 +12,7 @@ import { broadcast, parseRecipients } from './telegram.js';
 const argv = new Set(process.argv.slice(2));
 const DRY_RUN = argv.has('--dry-run');
 const FORCE = argv.has('--force');
+const REBUILD = argv.has('--rebuild');
 
 function log(...args) {
   console.log(`[${new Date().toISOString()}]`, ...args);
@@ -43,10 +44,10 @@ async function main() {
   }
 
   const bossList = await loadBossList();
-  const { history, storedVersion, stale } = hydrateHistory(await loadHistoryFile());
+  const { history, storedVersion, stale, reason } = hydrateHistory(await loadHistoryFile(), { force: REBUILD });
   log(`tracking ${bossList.bosses.length} nemesis bosses`);
   if (stale) {
-    log(`stored history is schema ${storedVersion}, current is ${SCHEMA_VERSION} — rebuilding from the archive`);
+    log(`stored history rejected (${reason}, version ${storedVersion}) — rebuilding from the archive`);
   }
 
 
