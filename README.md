@@ -149,6 +149,18 @@ one.
 
 ---
 
+### Somebody joining mid-day
+
+A **channel** shows its whole past to anyone who subscribes, so a newcomer sees every
+report already sent — nothing to configure. A **supergroup** hides it unless
+*Manage group → Chat history for new members* is set to **Visible**.
+
+On top of that, the run **re-pins the first message of each report** and unpins the
+previous day's, so whoever arrives lands on today's chain instead of an empty screen and
+can tap the pin to jump to it. The bot needs the *Pin messages* admin right; without it
+the run logs `could not pin` and carries on. The pinned message id per destination is
+kept in `data/state.json`.
+
 ## Message layout
 
 The report arrives as five messages. Only the two you act on every morning are expanded:
@@ -214,6 +226,7 @@ marker — 🟢 tight, 🟠 some spread, 🔴 the sites genuinely disagree.
 ---
 
 ## Setup
+
 
 ### 1. Telegram bot
 

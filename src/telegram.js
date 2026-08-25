@@ -66,11 +66,38 @@ export async function broadcast(token, recipients, messages) {
   for (const [index, chatId] of recipients.entries()) {
     if (index > 0) await sleep(400);
     try {
-      await sendChain(token, chatId, messages);
-      results.push({ chatId, ok: true });
+      const sent = await sendChain(token, chatId, messages);
+      results.push({ chatId, ok: true, firstMessageId: sent[0]?.message_id ?? null });
     } catch (error) {
       results.push({ chatId, ok: false, error: error.message });
     }
   }
   return results;
+}
+
+/**
+ * Pinning the first message of the chain gives anyone arriving later an anchor: Telegram
+ * shows it in the bar at the top of the chat, and tapping it jumps to the start of the
+ * day's report instead of an empty screen.
+ *
+ * Requires the "Pin messages" admin right in a channel or group; in a private chat it
+ * always works. A refusal is returned rather than thrown — a missing permission must not
+ * cost anybody their report.
+ */
+async function pinCall(token, method, body) {
+  const res = await fetch(`${API}/bot${token}/${method}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const payload = await res.json().catch(() => ({}));
+  return payload.ok ? { ok: true } : { ok: false, error: payload.description ?? `HTTP ${res.status}` };
+}
+
+export function pinMessage(token, chatId, messageId) {
+  return pinCall(token, 'pinChatMessage', { chat_id: chatId, message_id: messageId, disable_notification: true });
+}
+
+export function unpinMessage(token, chatId, messageId) {
+  return pinCall(token, 'unpinChatMessage', { chat_id: chatId, message_id: messageId });
 }

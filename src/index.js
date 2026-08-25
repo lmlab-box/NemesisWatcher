@@ -7,7 +7,7 @@ import { fetchExternalSources } from './sources/index.js';
 import { backfill } from './backfill.js';
 import { buildConsensus, bucketRows } from './consensus.js';
 import { buildReport } from './report.js';
-import { broadcast, parseRecipients } from './telegram.js';
+import { broadcast, parseRecipients, pinMessage, unpinMessage } from './telegram.js';
 
 const argv = new Set(process.argv.slice(2));
 const DRY_RUN = argv.has('--dry-run');
@@ -128,7 +128,25 @@ async function main() {
   }
   log(`${messages.length} message(s) delivered to ${delivered}/${recipients.length} recipient(s)`);
 
-  await saveState({ ...state, lastReportedDay: day, lastRunAt: new Date().toISOString(), killstatsSource: source });
+  // Re-pin so that whoever joins mid-day lands on today's report rather than an empty
+  // chat. The previous pin is removed first, and the new id is remembered for tomorrow.
+  const pins = { ...(state.pins ?? {}) };
+  for (const result of delivery) {
+    if (!result.ok || !result.firstMessageId) continue;
+
+    const previous = pins[result.chatId];
+    if (previous) await unpinMessage(token, result.chatId, previous);
+
+    const pinned = await pinMessage(token, result.chatId, result.firstMessageId);
+    if (pinned.ok) {
+      pins[result.chatId] = result.firstMessageId;
+      log(`  pinned in ${result.chatId}`);
+    } else {
+      log(`  could not pin in ${result.chatId}: ${pinned.error}`);
+    }
+  }
+
+  await saveState({ ...state, lastReportedDay: day, lastRunAt: new Date().toISOString(), killstatsSource: source, pins });
   log('state saved');
 }
 
