@@ -1,0 +1,23 @@
+name: List Telegram chat ids
+
+# A helper you run by hand when adding a destination: it asks Telegram which chats the
+# bot has seen and prints their ids, so the token never has to leave the repository
+# secret. Chat ids are not secrets — they are safe to read in the log.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  chat-ids:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Ask Telegram which chats the bot can see
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: node scripts/chat-ids.mjs

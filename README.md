@@ -140,10 +140,12 @@ lands in their own private chat with the bot. Revoking is deleting their id. The
 that the roster lives in your head and in the secret — there is no member list to consult,
 and no approval step.
 
-To find a private channel's id: add the bot as an administrator, post any message in the
-channel, then open `https://api.telegram.org/bot<TOKEN>/getUpdates` and read
-`channel_post.chat.id`. That URL contains your token — do not paste or screenshot it
-anywhere.
+To find a channel's id, run the **List Telegram chat ids** workflow (Actions → left
+sidebar). It reads the token from the repository secret and prints every chat the bot has
+seen in the last 24 hours, so the token never has to be pasted into a URL. Add the bot to
+the channel as an administrator *first*, post a message there, then run it — a bot only
+receives channel posts from channels it administers, and only from the moment it became
+one.
 
 ---
 
