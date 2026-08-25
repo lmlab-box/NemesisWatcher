@@ -7,7 +7,7 @@ import { fetchExternalSources } from './sources/index.js';
 import { backfill } from './backfill.js';
 import { buildConsensus, bucketRows } from './consensus.js';
 import { buildReport } from './report.js';
-import { sendAll } from './telegram.js';
+import { broadcast, parseRecipients } from './telegram.js';
 
 const argv = new Set(process.argv.slice(2));
 const DRY_RUN = argv.has('--dry-run');
@@ -112,11 +112,20 @@ async function main() {
   }
 
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-  if (!token || !chatId) throw new Error('TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID must be set');
+  const recipients = parseRecipients(process.env.TELEGRAM_CHAT_ID);
+  if (!token) throw new Error('TELEGRAM_BOT_TOKEN must be set');
+  if (recipients.length === 0) throw new Error('TELEGRAM_CHAT_ID must hold at least one destination');
 
-  await sendAll(token, chatId, messages);
-  log(`sent ${messages.length} message(s)`);
+  const delivery = await broadcast(token, recipients, messages);
+  for (const result of delivery) {
+    log(`  ${result.ok ? 'sent' : 'FAIL'} → ${result.chatId}${result.ok ? '' : `: ${result.error}`}`);
+  }
+
+  const delivered = delivery.filter((r) => r.ok).length;
+  if (delivered === 0) {
+    throw new Error(`no recipient received the report (${delivery.map((r) => r.error).join(' | ')})`);
+  }
+  log(`${messages.length} message(s) delivered to ${delivered}/${recipients.length} recipient(s)`);
 
   await saveState({ ...state, lastReportedDay: day, lastRunAt: new Date().toISOString(), killstatsSource: source });
   log('state saved');

@@ -102,6 +102,51 @@ stopwatch, not world data), [tibiabosses.com](https://www.tibiabosses.com/) (gui
 
 ---
 
+## Who receives the report
+
+`TELEGRAM_CHAT_ID` accepts **several destinations**, separated by commas, semicolons or
+whitespace. A destination is a numeric chat id (a person, or a channel — channel ids are
+negative and begin with `-100`), or a public channel's `@username`:
+
+```
+-1002345678901, 6150677303
+```
+
+One recipient failing does not cost the others their report: the failure is logged per
+destination and the run only fails when *nobody* received anything. That matters because
+a person who blocks the bot would otherwise break the whole delivery.
+
+### Sharing it with other people
+
+Two ways, and the first is better if you want to keep control of who reads it.
+
+**A private channel.** Create it, add the bot as an administrator with *Post messages*,
+and point `TELEGRAM_CHAT_ID` at the channel id. Access control then belongs to Telegram:
+
+- **Subscribers** is the channel's member list — you can see exactly who is in.
+- **Approving people**: turn on *Invite Links → Request Admin Approval*. Nobody joins
+  without you tapping approve.
+- **Named invite links**: one link per person or group, each with its own expiry, usage
+  limit and join counter, so you know who came in through which link.
+- **Revoking one person**: remove them from the members list. Revoking a link stops
+  everyone who has not used it yet.
+
+Members cannot post in a channel, so it stays a clean feed. This needs no code change —
+only the secret changes.
+
+**Individual chats.** Each person opens the bot, presses START, sends you the id they get
+from [@userinfobot](https://t.me/userinfobot), and you append it to the secret. Delivery
+lands in their own private chat with the bot. Revoking is deleting their id. The catch is
+that the roster lives in your head and in the secret — there is no member list to consult,
+and no approval step.
+
+To find a private channel's id: add the bot as an administrator, post any message in the
+channel, then open `https://api.telegram.org/bot<TOKEN>/getUpdates` and read
+`channel_post.chat.id`. That URL contains your token — do not paste or screenshot it
+anywhere.
+
+---
+
 ## Message layout
 
 The report arrives as five messages. Only the two you act on every morning are expanded:
