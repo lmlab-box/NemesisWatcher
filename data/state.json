@@ -1,9 +1,9 @@
 {
-  "lastReportedDay": "2026-08-28",
-  "lastRunAt": "2026-08-28T21:15:21.024Z",
-  "killstatsSource": "archive",
+  "lastReportedDay": "2026-08-29",
+  "lastRunAt": "2026-08-29T03:38:07.056Z",
+  "killstatsSource": "tibiadata",
   "pins": {
     "6150677303": 22,
-    "-1004307880912": 15
+    "-1004307880912": 21
   }
 }
