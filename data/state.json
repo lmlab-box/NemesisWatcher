@@ -1,9 +1,9 @@
 {
-  "lastReportedDay": "2026-10-31",
-  "lastRunAt": "2026-10-31T09:54:05.547Z",
+  "lastReportedDay": "2026-11-01",
+  "lastRunAt": "2026-11-01T10:44:43.638Z",
   "killstatsSource": "archive",
   "pins": {
     "6150677303": 22,
-    "-1004307880912": 360
+    "-1004307880912": 365
   }
 }
